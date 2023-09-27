@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Tag;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -15,7 +16,19 @@ class CreateTagsTable extends Migration
     {
         Schema::create('tags', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
+            $table->string("name");
+        });
+
+        Tag::create(["name" => "has_ac"]);
+        Tag::create(["name" => "has_private_bathroom"]);
+        Tag::create(["name" => "has_coffee_machine"]);
+
+        Schema::create('offices_tags', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId("office_id")->index()->constrained("offices")->onDelete("cascade");
+            $table->foreignId("tag_id")->index()->constrained("tags")->onDelete("cascade");
+
+            $table->unique(["office_id", "tag_id"]);
         });
     }
 
