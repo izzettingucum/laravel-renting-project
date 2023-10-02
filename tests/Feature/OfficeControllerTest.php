@@ -20,9 +20,7 @@ class OfficeControllerTest extends TestCase
     {
         Office::factory(3)->create();
 
-        $response = $this->get('/api/offices');
-
-        $response->dump();
+        $response = $this->get('/api/offices')->dump();
 
         $response->assertOk();
     }
@@ -30,7 +28,7 @@ class OfficeControllerTest extends TestCase
     /**
      * @test
      */
-    public function itFiltersByHostId()
+    public function itFiltersByUserId()
     {
         Office::factory(3)->create();
 
@@ -38,7 +36,7 @@ class OfficeControllerTest extends TestCase
 
         $office = Office::factory()->for($host)->create();
 
-        $response = $this->get("api/offices?host_id=" . $host->id);
+        $response = $this->get("api/offices?user_id=" . $host->id);
 
         $response->dump();
 
@@ -52,7 +50,7 @@ class OfficeControllerTest extends TestCase
     /**
      * @test
      */
-    public function itFiltersByUserId()
+    public function itFiltersByVisitorId()
     {
         $user = User::factory()->create();
 
@@ -60,7 +58,7 @@ class OfficeControllerTest extends TestCase
 
         Reservation::factory()->for($office)->for($user)->create();
 
-        $response = $this->get("api/offices?user_id=" . $user->id);
+        $response = $this->get("api/offices?visitor_id=" . $user->id);
 
         $this->assertCount(1, $response->json("data"));
 
@@ -110,9 +108,6 @@ class OfficeControllerTest extends TestCase
 
     public function itOrdersByDistanceWhenCoordinatesAreProvided()
     {
-        //39.398513
-        //30.015237
-
         $office1 = Office::factory()->create([
             "lat" => "39.400021",
             "lng" => "30.016182",
@@ -156,5 +151,40 @@ class OfficeControllerTest extends TestCase
         $this->assertNotNull($response->json("data")["images"]);
         $this->assertNotNull($response->json("data")["tags"]);
         $this->assertNotNull($response->json("data")["user"]);
+    }
+
+    /**
+     * @test
+     */
+
+    public function itCreatesAnOffice()
+    {
+        $user = User::factory()->createQuietly();
+
+        $tag = Tag::factory()->create();
+
+        $tag2 = Tag::factory()->create();
+
+        $this->actingAs($user);
+
+        $response = $this->postJson("api/offices", [
+            "title" => "Deneme Başlığı",
+            "description" => "Deneme Açıklaması",
+            "lat" => "39.400021",
+            "lng" => "30.016182",
+            "address_line1" => "address",
+            "price_per_day" => 10000,
+            "monthly_discount" => 25,
+            "tags" => [$tag->id, $tag2->id]
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath("data.title", "Deneme Başlığı")
+            ->assertJsonPath("data.user.id", $user->id)
+            ->assertJsonCount(2, "data.tags");
+
+        $this->assertDatabaseHas("offices", [
+            "title" => "Deneme Başlığı"
+        ]);
     }
 }

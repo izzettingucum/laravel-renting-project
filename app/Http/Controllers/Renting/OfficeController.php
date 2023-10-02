@@ -3,11 +3,17 @@
 namespace App\Http\Controllers\Renting;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\OfficeRequest;
 use App\Http\Resources\OfficeResource;
 use App\Models\Office;
 use App\Models\Reservation;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class OfficeController extends Controller
 {
@@ -16,16 +22,14 @@ class OfficeController extends Controller
         $offices = Office::query()
             ->where("approval_status", Office::APPROVAL_APPROVED)
             ->where("hidden", false)
-            ->when(request("host_id"), function ($query) {
-                return $query->whereUserId(request("host_id"));
-            })
             ->when(request("user_id"), function ($query) {
-                return $query->whereRelation("reservations", "user_id", "=", request("user_id"));
+                return $query->whereUserId(request("user_id"));
+            })
+            ->when(request("visitor_id"), function ($query) {
+                return $query->whereRelation("reservations", "user_id", "=", request("visitor_id"));
             })
             ->when(request("lat") && request("lng"), function ($query) {
                 return $query->NearestTo(request("lat"), request("lng"));
-            }, function ($query) {
-                return $query->orderBy("id", "ASC");
             })
             ->latest("id")
             ->with(["images", "tags", "user"])
@@ -50,5 +54,24 @@ class OfficeController extends Controller
         return OfficeResource::make(
             $office
         );
+    }
+
+    public function create(OfficeRequest $request) : OfficeResource
+    {
+        if(! auth()->user()->tokenCan("office.create")) {
+            abort(Response::HTTP_FORBIDDEN);
+        }
+
+        $attributes = $request->validated();
+
+        $attributes["approval_status"] = Office::APPROVAL_PENDING;
+
+        $office = Auth()->user()->offices()->create(
+            Arr::except($attributes, "tags")
+        );
+
+        $office->tags()->sync($attributes["tags"]);
+
+        return OfficeResource::make($office);
     }
 }
