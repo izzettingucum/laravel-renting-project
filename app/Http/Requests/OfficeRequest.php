@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Office;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,15 +25,17 @@ class OfficeRequest extends FormRequest
      */
     public function rules()
     {
+        $isOffice = $this->office instanceof Office;
+
         return [
-            "title" => ["required", "string"],
-            "description" => ["required", "string"],
-            "lat" => ["required", "numeric"],
-            "lng" => ["required", "numeric"],
-            "address_line1" => ["required", "string"],
-            "hidden" => ["boolean"],
-            "price_per_day" => ["required", "integer", "min:100"],
+            'title' => [Rule::when($isOffice, 'sometimes'), 'required', 'string'],
+            'description' => [Rule::when($isOffice, 'sometimes'), 'required', 'string'],
+            'lat' => [Rule::when($isOffice, 'sometimes'), 'required', 'numeric'],
+            'lng' => [Rule::when($isOffice, 'sometimes'), 'required', 'numeric'],
+            'address_line1' => [Rule::when($isOffice, 'sometimes'), 'required', 'string'],
+            'price_per_day' => [Rule::when($isOffice, 'sometimes'), 'required', 'integer', 'min:100'],
             "monthly_discount" => ["integer", "min:0", "max:100"],
+            "hidden" => ["boolean"],
 
             "tags" => ["array"],
             "tags.*" => ["integer", Rule::exists("tags", "id")]

@@ -9,6 +9,7 @@ use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Http\Response;
 use Tests\TestCase;
 
 class OfficeControllerTest extends TestCase
@@ -176,7 +177,7 @@ class OfficeControllerTest extends TestCase
             "price_per_day" => 10000,
             "monthly_discount" => 25,
             "tags" => [$tag->id, $tag2->id]
-        ]);
+        ])->dump();
 
         $response->assertCreated()
             ->assertJsonPath("data.title", "Deneme Başlığı")
@@ -186,5 +187,53 @@ class OfficeControllerTest extends TestCase
         $this->assertDatabaseHas("offices", [
             "title" => "Deneme Başlığı"
         ]);
+    }
+
+     /**
+     * @test
+     */
+
+     public function itUpdatesAnOffice()
+     {
+         $user = User::factory()->create();
+
+         $tags = Tag::factory(2)->create();
+         $anotherTag = Tag::factory()->create();
+
+         $office = Office::factory()->for($user)->create();
+         $office->tags()->attach($tags);
+
+         $this->actingAs($user);
+
+         $title = "Updated Title";
+
+         $response = $this->patchJson("api/offices/" . $office->id, [
+             "title" => $title,
+             "tags" => [$tags[0]->id, $anotherTag->id]
+         ])->dump();
+
+         $response->assertOk()
+         ->assertJsonCount(2, "data.tags")
+         ->assertJsonPath("data.tags.0.id", $tags[0]->id)
+         ->assertJsonPath("data.title", $title);
+     }
+
+     /**
+     * @test
+     */
+    public function itDoesntUpdateOfficeThatDoesntBelongsToUser()
+    {
+        $user = User::factory()->create();
+        $anotherUser = User::factory()->create();
+
+        $office = Office::factory()->for($user)->create();
+
+        $this->actingAs($anotherUser);
+
+        $response = $this->patchJson("api/offices/" . $office->id, [
+            "title" => "unauthorized"
+        ])->dump();
+
+        $response->assertStatus(Response::HTTP_FORBIDDEN);
     }
 }
