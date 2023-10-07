@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Renting\OfficeController;
+use App\Http\Controllers\Renting\OfficeImageController;
 use App\Http\Controllers\Renting\TagController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -24,3 +25,6 @@ Route::get('/offices', [OfficeController::class, "index"]);
 Route::get('/offices/{office}', [OfficeController::class, "show"]);
 Route::post('/offices', [OfficeController::class, "create"])->middleware(["auth:sanctum", "verified"]);
 Route::patch('/offices/{office}', [OfficeController::class, "update"])->middleware(["auth:sanctum", "verified"]);
+Route::delete('/offices/{office}', [OfficeController::class, "delete"])->middleware(["auth:sanctum", "verified"]);
+
+Route::post('/offices/{office}/images', [OfficeImageController::class, "store"])->middleware(["auth:sanctum", "verified"]);

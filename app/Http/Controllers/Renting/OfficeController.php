@@ -7,18 +7,28 @@ use App\Http\Requests\OfficeRequest;
 use App\Http\Resources\OfficeResource;
 use App\Models\Office;
 use App\Models\Reservation;
+use App\Models\User;
+use App\Notifications\OfficePendingApproval;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\ValidationException;
 
 class OfficeController extends Controller
 {
     public function index(): AnonymousResourceCollection
     {
         $offices = Office::query()
-            ->where("approval_status", Office::APPROVAL_APPROVED)
-            ->where("hidden", false)
+            ->when(request("user_id") && auth()->user() && request("user_id") == auth()->id(),
+            function ($query) {
+                return $query;
+                },
+            function ($query) {
+                return $query->where("approval_status", Office::APPROVAL_APPROVED)
+                    ->where("hidden", false);
+            })
             ->when(request("user_id"), function ($query) {
                 return $query->whereUserId(request("user_id"));
             })
@@ -74,6 +84,8 @@ class OfficeController extends Controller
             return $office;
         });
 
+        Notification::send(User::where("is_admin", true)->get(), new OfficePendingApproval($office));
+
         return OfficeResource::make(
             $office->load(["images", "tags", "user"])
         );
@@ -89,10 +101,14 @@ class OfficeController extends Controller
 
         $attributes = $request->validated();
 
+        $office->fill(Arr::except($attributes, "tags"));
+
+        if($requiresReview = $office->isDirty(["lat", "lng", "price_per_day", "address_line1"])) {
+            $office->fill(["approval_status" => Office::APPROVAL_PENDING]);
+        }
+
         DB::transaction(function () use($attributes, $office) {
-            $office->update(
-                Arr::except($attributes, "tags")
-            );
+            $office->save();
 
             if (isset($attributes["tags"])) {
                 $office->tags()->sync($attributes["tags"]);
@@ -101,8 +117,28 @@ class OfficeController extends Controller
             return $office;
         });
 
+        if($requiresReview) {
+            Notification::send(User::where("is_admin", true)->get(), new OfficePendingApproval($office));
+        }
+
         return OfficeResource::make(
             $office->load("images", "tags", "user")
         );
+    }
+
+    public function delete(Office $office)
+    {
+        abort_unless(auth()->user()->tokenCan("office.delete"),
+            Response::HTTP_FORBIDDEN
+        );
+
+        $this->authorize("delete", $office);
+
+        throw_if(
+            $office->reservations()->where("status", Reservation::STATUS_ACTIVE)->exists(),
+            ValidationException::withMessages(["error" => "Cannot delete this office!"])
+        );
+
+        $office->delete();
     }
 }
