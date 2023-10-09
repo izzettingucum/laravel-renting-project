@@ -36,7 +36,10 @@ class OfficeRequest extends FormRequest
             'price_per_day' => [Rule::when($isOffice, 'sometimes'), 'required', 'integer', 'min:100'],
             "monthly_discount" => ["integer", "min:0", "max:100"],
             "hidden" => ["boolean"],
-
+            "featured_image_id" => [Rule::exists("images", "id")
+                ->where("resource_type", "office")
+                ->where("resource_id", $this->office->id)
+            ],
             "tags" => ["array"],
             "tags.*" => ["integer", Rule::exists("tags", "id")]
         ];

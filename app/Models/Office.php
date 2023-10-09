@@ -24,7 +24,8 @@ class Office extends Model
         "approval_status" => "integer",
         "hidden" => "bool",
         "price_per_day" => "integer",
-        "monthly_discount" => "integer"
+        "monthly_discount" => "integer",
+        "featured_image_id" => "integer"
     ];
 
     public function user() : BelongsTo
@@ -40,6 +41,11 @@ class Office extends Model
     public function images() : MorphMany
     {
         return $this->morphMany(Image::class, "resource");
+    }
+
+    public function featuredImage() : BelongsTo
+    {
+        return $this->belongsTo(Image::class, "featured_image_id", "id");
     }
 
     public function tags() : BelongsToMany

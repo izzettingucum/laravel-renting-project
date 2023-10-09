@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Image;
 use App\Models\Office;
 use App\Models\Reservation;
 use App\Models\Tag;
@@ -10,11 +11,15 @@ use App\Notifications\OfficePendingApproval;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\Response;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class OfficeControllerTest extends TestCase
 {
+    Use RefreshDatabase, WithFaker;
+
     /**
      * @test
      */
@@ -189,7 +194,7 @@ class OfficeControllerTest extends TestCase
     {
         Notification::fake();
 
-        $admin = User::find(1);
+        $admin = User::factory()->create(["is_admin" => true]);
         $user = User::factory()->createQuietly();
 
         $tag = Tag::factory()->create();
@@ -200,6 +205,7 @@ class OfficeControllerTest extends TestCase
         $response = $this->postJson("api/offices", [
             "title" => "Deneme Başlığı",
             "description" => "Deneme Açıklaması",
+            "user_id" => $user->id,
             "lat" => "39.400021",
             "lng" => "30.016182",
             "address_line1" => "address",
@@ -273,9 +279,9 @@ class OfficeControllerTest extends TestCase
      */
     public function itMarksTheOfficeAsPendingIfDirty()
     {
-        $admin = User::factory()->create(["is_admin" => true]);
-
         Notification::fake();
+
+        $admin = User::factory()->create(["is_admin" => true]);
 
         $user = User::factory()->create();
         $office = Office::factory()->for($user)->create();
@@ -332,5 +338,52 @@ class OfficeControllerTest extends TestCase
             "id" => $office->id,
             "deleted_at" => null
         ]);
+    }
+
+
+    /**
+     * @test
+     */
+    public function itUpdatetedTheFeatureImageOfAnOffice()
+    {
+         $user = User::factory()->create();
+         $office = Office::factory()->for($user)->create();
+
+         $image = $office->images()->create([
+            "path" => "image.jpg"
+         ]);
+
+        $this->actingAs($user);
+
+        $response = $this->patchJson("api/offices/{$office->id}", [
+            "featured_image_id" => $image->id
+        ])->dump();
+
+        $response->assertOk()
+            ->assertJsonPath("data.featured_image_id", $image->id);
+    }
+
+    /**
+     * @test
+     */
+
+    public function itDoesntUpdateFeaturedImageThatBelongsToAnotherOffice()
+    {
+        $user = User::factory()->create();
+        $office = Office::factory()->for($user)->create();
+        $office2 = Office::factory()->create();
+
+        $image = $office2->images()->create([
+            "path" =>  $this->faker->word . ".jpg"
+        ]);
+
+        $this->actingAs($user);
+
+        $response = $this->patchJson("api/offices/{$office->id}", [
+            "featured_image_id" => $image->id
+        ])->dump();
+
+        $response->assertUnprocessable()
+        ->assertInvalid("featured_image_id");
     }
 }

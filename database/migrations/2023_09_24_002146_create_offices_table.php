@@ -17,6 +17,7 @@ class CreateOfficesTable extends Migration
         Schema::create('offices', function (Blueprint $table) {
             $table->id();
             $table->foreignId("user_id")->index()->constrained("users")->onDelete("cascade");
+            $table->foreignId('featured_image_id')->index()->nullable()->constrained('images')->onDelete('set null');
             $table->string("title");
             $table->text("description");
             $table->decimal("lat", 11, 8);
