@@ -8,17 +8,16 @@ use App\Models\Reservation;
 use App\Models\Tag;
 use App\Models\User;
 use App\Notifications\OfficePendingApproval;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\Response;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class OfficeControllerTest extends TestCase
 {
-    Use RefreshDatabase, WithFaker;
+    Use LazilyRefreshDatabase, WithFaker;
 
     /**
      * @test
@@ -42,9 +41,7 @@ class OfficeControllerTest extends TestCase
         $host = User::factory()->create();
         $office = Office::factory()->for($host)->create();
 
-        $response = $this->get("api/offices?user_id=" . $host->id);
-
-        $response->dump();
+        $response = $this->get("api/offices?user_id=" . $host->id)->dump();
 
         $response->assertOk();
 
@@ -305,16 +302,26 @@ class OfficeControllerTest extends TestCase
      */
      public function itCanDeleteOffices()
      {
+         Storage::put("office_image.jpg", "empty");
+
          $user = User::factory()->create();
          $office = Office::factory()->for($user)->create();
 
+         $image = $office->images()->create([
+             "path" => "office_image.jpg"
+         ]);
+
          $this->actingAs($user);
 
-         $response = $this->deleteJson("api/offices/" . $office->id);
+         $response = $this->deleteJson("api/offices/{$office->id}");
 
          $response->assertOk();
 
          $this->assertSoftDeleted($office);
+
+         $this->assertModelMissing($image);
+
+         Storage::assertMissing("office_image.jpg");
      }
 
     /**
@@ -334,10 +341,7 @@ class OfficeControllerTest extends TestCase
 
         $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
 
-        $this->assertDatabaseHas("offices", [
-            "id" => $office->id,
-            "deleted_at" => null
-        ]);
+        $this->assertNotSoftDeleted($office);
     }
 
 

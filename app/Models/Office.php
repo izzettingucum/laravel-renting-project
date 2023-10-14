@@ -58,9 +58,9 @@ class Office extends Model
         return $query
             ->select()
             ->orderByRaw(
-            'SQRT(POW(69.1 * (lat - ?), 2) + POW(69.1 * (? - lng) * COS(lat / 57.3), 2))',
-            [$lat, $lng]
-        );
+                'POW(69.1 * (lat - ?), 2) + POW(69.1 * (? - lng) * COS(lat / 57.3), 2)',
+                [$lat, $lng]
+            );
     }
 
 }

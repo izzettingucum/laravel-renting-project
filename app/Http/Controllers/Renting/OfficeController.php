@@ -14,6 +14,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class OfficeController extends Controller
@@ -66,7 +67,7 @@ class OfficeController extends Controller
     public function create(OfficeRequest $request) : OfficeResource
     {
         abort_unless(auth()->user()->tokenCan("office.create"),
-        Response::HTTP_FORBIDDEN
+            Response::HTTP_FORBIDDEN
         );
 
         $attributes = $request->validated();
@@ -138,6 +139,11 @@ class OfficeController extends Controller
             $office->reservations()->where("status", Reservation::STATUS_ACTIVE)->exists(),
             ValidationException::withMessages(["error" => "Cannot delete this office!"])
         );
+
+        $office->images()->each(function ($image) {
+            Storage::delete($image->path);
+            $image->delete();
+        });
 
         $office->delete();
     }

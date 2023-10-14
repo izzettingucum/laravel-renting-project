@@ -25,20 +25,21 @@ class OfficeRequest extends FormRequest
      */
     public function rules()
     {
-        $isOffice = $this->office instanceof Office;
+        $this->office == null ? $office = new Office() : $office = $this->office;
 
         return [
-            'title' => [Rule::when($isOffice, 'sometimes'), 'required', 'string'],
-            'description' => [Rule::when($isOffice, 'sometimes'), 'required', 'string'],
-            'lat' => [Rule::when($isOffice, 'sometimes'), 'required', 'numeric'],
-            'lng' => [Rule::when($isOffice, 'sometimes'), 'required', 'numeric'],
-            'address_line1' => [Rule::when($isOffice, 'sometimes'), 'required', 'string'],
-            'price_per_day' => [Rule::when($isOffice, 'sometimes'), 'required', 'integer', 'min:100'],
+            'title' => [Rule::when($office->exists, 'sometimes'), 'required', 'string'],
+            'description' => [Rule::when($office->exists, 'sometimes'), 'required', 'string'],
+            'lat' => [Rule::when($office->exists, 'sometimes'), 'required', 'numeric'],
+            'lng' => [Rule::when($office->exists, 'sometimes'), 'required', 'numeric'],
+            'address_line1' => [Rule::when($office->exists, 'sometimes'), 'required', 'string'],
+            'price_per_day' => [Rule::when($office->exists, 'sometimes'), 'required', 'integer', 'min:100'],
             "monthly_discount" => ["integer", "min:0", "max:100"],
             "hidden" => ["boolean"],
-            "featured_image_id" => [Rule::exists("images", "id")
-                ->where("resource_type", "office")
-                ->where("resource_id", $this->office->id)
+            'featured_image_id' => [
+                Rule::exists('images', 'id')
+                    ->where('resource_type', 'office')
+                    ->where('resource_id', $office->id),
             ],
             "tags" => ["array"],
             "tags.*" => ["integer", Rule::exists("tags", "id")]

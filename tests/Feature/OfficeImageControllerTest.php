@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Office;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
@@ -13,14 +13,14 @@ use Tests\TestCase;
 
 class OfficeImageControllerTest extends TestCase
 {
-    Use RefreshDatabase, WithFaker;
+    Use LazilyRefreshDatabase, WithFaker;
 
     /**
      * @test
      */
     public function itUploadsAnImageAndStoresItUnderTheOffice()
     {
-        Storage::fake("public");
+        Storage::fake();
 
         $user = User::factory()->create();
         $office = Office::factory()->for($user)->create();
@@ -35,7 +35,7 @@ class OfficeImageControllerTest extends TestCase
 
         $response->assertStatus(Response::HTTP_CREATED);
 
-        Storage::disk("public")->assertExists(
+        Storage::assertExists(
             $response->json("data.path")
         );
     }
@@ -46,7 +46,7 @@ class OfficeImageControllerTest extends TestCase
      */
     public function itDeletesAnImage()
     {
-        Storage::disk("public")->put("office_image.jpg", "empty");
+        Storage::put("office_image.jpg", "empty");
 
         $user = User::factory()->create();
         $office = Office::factory()->for($user)->create();
@@ -67,7 +67,7 @@ class OfficeImageControllerTest extends TestCase
 
         $this->assertModelMissing($image1);
 
-        Storage::disk("public")->assertMissing("office_image.jpg");
+        Storage::assertMissing("office_image.jpg");
     }
 
      /**
@@ -122,9 +122,9 @@ class OfficeImageControllerTest extends TestCase
      public function itDoesntDeleteTheImageThatBelongsToAnotherResource()
      {
          $user = User::factory()->create();
+
          $office = Office::factory()->for($user)->create();
          $office2 = Office::factory()->for($user)->create();
-
 
          $image2 = $office2->images()->create([
              "path" => $this->faker->word . ".jpg",
@@ -134,7 +134,6 @@ class OfficeImageControllerTest extends TestCase
 
          $response = $this->deleteJson("api/offices/{$office->id}/images/{$image2->id}")->dump();
 
-         $response->assertUnprocessable()
-             ->assertJsonValidationErrors(["error" => "Cannot delete the this image."]);
+         $response->assertNotFound();
      }
 }
