@@ -20,21 +20,42 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Tags...
-Route::get('/tags', TagController::class);
+Route::group(["prefix" => "tags", "controller" => TagController::class, "as" => "tags."], function () {
+    Route::get("/", TagController::class)->name("list");
+});
+
 
 // Offices...
-Route::get('/offices', [OfficeController::class, "index"]);
-Route::get('/offices/{office}', [OfficeController::class, "show"]);
-Route::post('/offices', [OfficeController::class, "create"])->middleware(["auth:sanctum", "verified"]);
-Route::patch('/offices/{office}', [OfficeController::class, "update"])->middleware(["auth:sanctum", "verified"]);
-Route::delete('/offices/{office}', [OfficeController::class, "delete"])->middleware(["auth:sanctum", "verified"]);
+Route::group(["prefix" => "offices", "controller" => OfficeController::class, "as" => "offices."], function () {
+    Route::get('/', "index")->name("list");
+    Route::get('/{office}',  "show")->name("show");
+    Route::group(["middleware" => ["auth:sanctum", "verified"]], function () {
+        Route::post('/', "create")->name("create");
+        Route::patch('/{office}', "update")->name("update");
+        Route::delete('/{office}', "delete")->name("delete");
+    });
+});
 
 // Office Photos...
-Route::post('/offices/{office}/images', [OfficeImageController::class, "store"])->middleware(["auth:sanctum", "verified"]);
-Route::delete('/offices/{office}/images/{image:id}', [OfficeImageController::class, "delete"])->middleware(["auth:sanctum", "verified"]);
+Route::group(["prefix" => "offices/{office}/images", "controller" => OfficeImageController::class, "as" =>"offices.images."], function () {
+    Route::group(["middleware" => ["auth:sanctum", "verified"]], function () {
+        Route::post("/", "store")->name("create");
+        Route::delete("/{image:id}", "delete")->name("delete");
+    });
+});
 
 // User Reservations...
-Route::get("/reservations", [UserReservationController::class, "index"])->middleware(["auth:sanctum", "verified"]);
+Route::group(["prefix" => "reservations", "controller" => UserReservationController::class, "as" => "reservations."], function () {
+    Route::group(["middleware" => ["auth:sanctum", "verified"]], function () {
+        Route::get("/", "index")->name("list");
+        Route::post("/", "create")->name("create");
+    });
+});
 
 // Host Reservations...
-Route::get('/host/reservations', [HostReservationController::class, 'index']);
+Route::group(["prefix" => "host/reservations", "controller" => HostReservationController::class, "as" => "host.reservations."], function () {
+    Route::group(["middleware" => ["auth:sanctum", "verified"]], function () {
+        Route::get('', "index")->name("list");
+    });
+});
+

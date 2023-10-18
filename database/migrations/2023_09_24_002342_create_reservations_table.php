@@ -19,6 +19,7 @@ class CreateReservationsTable extends Migration
             $table->foreignId("office_id")->constrained("offices")->onDelete("cascade");
             $table->integer("price");
             $table->tinyInteger("status")->default(1);
+            $table->text("wifi_password")->nullable();
             $table->date("start_date");
             $table->date("end_date");
             $table->timestamps();

@@ -31,7 +31,7 @@ class HostReservationControllerTest extends TestCase
 
         $this->actingAs($host);
 
-        $response = $this->getJson('api/host/reservations')->dump();
+        $response = $this->getJson('api/host/reservations');
 
         $response->assertOk()
             ->assertJsonPath("data.0.id", $reservation->id)
@@ -43,7 +43,7 @@ class HostReservationControllerTest extends TestCase
      /**
      * @test
      */
-     public function itListReservationFilteredByOfficeId()
+     public function itListsReservationsFilteredByOfficeId()
      {
          $host = User::factory()->create();
          $user = User::factory()->create();
@@ -58,7 +58,7 @@ class HostReservationControllerTest extends TestCase
 
          $response = $this->getJson("api/host/reservations?" . http_build_query([
              "office_id" => $office1->id
-         ]))->dump();
+         ]));
 
          $response->assertJsonCount(1, "data")
              ->assertJsonPath("data.0.id", $reservation1->id);
@@ -67,7 +67,7 @@ class HostReservationControllerTest extends TestCase
       /**
       * @test
       */
-      public function itListReservationFilteredByUserId()
+      public function itListsReservationsFilteredByUserId()
       {
           $reservationCount = 2;
 
@@ -85,9 +85,99 @@ class HostReservationControllerTest extends TestCase
 
           $response = $this->getJson("api/host/reservations?" . http_build_query([
               "user_id" => $user1->id
-          ]))->dump();
+          ]));
 
           $response->assertJsonCount($reservationCount, "data")
               ->assertJsonPath("data.0.id", $reservation1->id);
       }
+
+       /**
+       * @test
+       */
+       public function itListsReservationsFilteredByStatus()
+       {
+           $host = User::factory()->create();
+
+           $user = User::factory()->create();
+
+           $office = Office::factory()->for($host)->create();
+
+           $reservationActive = Reservation::factory()->for($office)->for($user)->create([
+               "status" => Reservation::STATUS_ACTIVE
+           ]);
+
+           $reservationCancelled = Reservation::factory()->for($office)->for($user)->create([
+               "status" => Reservation::STATUS_CANCELLED
+           ]);
+
+           $this->actingAs($host);
+
+           $response = $this->getJson("api/host/reservations?" . http_build_query([
+               "status" => Reservation::STATUS_ACTIVE
+           ]));
+
+           $response->assertOk()
+               ->assertJsonCount(1, "data")
+               ->assertJsonPath("data.0.id", $reservationActive->id)
+               ->assertJsonPath("data.0.status", Reservation::STATUS_ACTIVE);
+       }
+
+     /**
+     * @test
+     */
+     public function itListsReservationFilteredByDateRange()
+     {
+         $user = User::factory()->create();
+         $host = User::factory()->create();
+
+         $office = Office::factory()->for($host)->create();
+
+         $fromDate = "2023-03-03";
+         $toDate = "2023-04-04";
+
+         $this->actingAs($host);
+
+         // Within the date range
+         $reservations = Reservation::factory()->for($office)->for($user)->createMany([
+             [
+                 "start_date" => "2023-02-25",
+                 "end_date" => "2023-03-05"
+             ],
+             [
+                 "start_date" => "2023-03-25",
+                 "end_date" => "2023-04-05"
+             ],
+             [
+                 "start_date" => "2023-03-04",
+                 "end_date" => "2023-03-24"
+             ]
+         ]);
+
+         // Within the range but belongs to a different user
+         Reservation::factory()->create([
+             'start_date' => '2021-03-25',
+             'end_date' => '2021-03-29',
+         ]);
+
+         // Outside the date range
+         Reservation::factory()->for($user)->create([
+             "start_date" => "2023-02-25",
+             "end_date" => "2023-03-01"
+         ]);
+
+         Reservation::factory()->for($user)->create([
+             "start_date" => "2023-04-25",
+             "end_date" => "2023-05-01"
+         ]);
+
+         $response = $this->getJson("api/host/reservations?" . http_build_query([
+                 "from_date" => $fromDate,
+                 "to_date" => $toDate
+             ]));
+
+         $response->assertOk()
+             ->assertJsonCount(3, "data");
+
+         $this->assertEquals($reservations->pluck("id")->toArray(), collect($response->json("data"))->pluck("id")->toArray());
+     }
 }

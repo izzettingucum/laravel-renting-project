@@ -29,7 +29,7 @@ class OfficeImageControllerTest extends TestCase
 
         $response = $this->postJson("api/offices/{$office->id}/images", [
             "image" => UploadedFile::fake()->image('image.jpg')
-        ])->dump();
+        ]);
 
         $response->assertCreated();
 
@@ -61,7 +61,7 @@ class OfficeImageControllerTest extends TestCase
 
         $this->actingAs($user);
 
-        $response = $this->deleteJson("api/offices/{$office->id}/images/{$image1->id}")->dump();
+        $response = $this->deleteJson("api/offices/{$office->id}/images/{$image1->id}");
 
         $response->assertOk();
 
@@ -84,7 +84,7 @@ class OfficeImageControllerTest extends TestCase
 
          $this->actingAs($user);
 
-         $response = $this->deleteJson("api/offices/{$office->id}/images/{$image->id}")->dump();
+         $response = $this->deleteJson("api/offices/{$office->id}/images/{$image->id}");
 
          $response->assertUnprocessable()
              ->assertJsonValidationErrors(["error" => "Cannot delete the only image."]);
@@ -110,7 +110,7 @@ class OfficeImageControllerTest extends TestCase
 
         $this->actingAs($user);
 
-        $response = $this->deleteJson("api/offices/{$office->id}/images/{$image1->id}")->dump();
+        $response = $this->deleteJson("api/offices/{$office->id}/images/{$image1->id}");
 
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(["error" => "Cannot delete the featured image."]);
@@ -132,7 +132,7 @@ class OfficeImageControllerTest extends TestCase
 
          $this->actingAs($user);
 
-         $response = $this->deleteJson("api/offices/{$office->id}/images/{$image2->id}")->dump();
+         $response = $this->deleteJson("api/offices/{$office->id}/images/{$image2->id}");
 
          $response->assertNotFound();
      }

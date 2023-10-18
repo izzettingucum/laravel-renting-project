@@ -17,8 +17,6 @@ class TagControllerTest extends TestCase
     {
         $response = $this->get('api/tags');
 
-        $response->dump();
-
         $response->assertOk();
     }
 }

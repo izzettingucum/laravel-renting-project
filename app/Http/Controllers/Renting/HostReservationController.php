@@ -3,15 +3,14 @@
 namespace App\Http\Controllers\Renting;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\ReservationRequest;
+use App\Http\Requests\HostReservation\ReservationIndexRequest;
 use App\Http\Resources\ReservationResource;
 use App\Models\Reservation;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class HostReservationController extends Controller
 {
-    public function index(ReservationRequest $request)
+    public function index(ReservationIndexRequest $request)
     {
         abort_unless(auth()->user()->tokenCan("reservations.show"),
             Response::HTTP_FORBIDDEN

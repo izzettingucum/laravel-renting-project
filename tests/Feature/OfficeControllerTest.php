@@ -26,7 +26,7 @@ class OfficeControllerTest extends TestCase
     {
         Office::factory(3)->create();
 
-        $response = $this->get('/api/offices')->dump();
+        $response = $this->get('/api/offices');
 
         $response->assertOk();
     }
@@ -41,7 +41,7 @@ class OfficeControllerTest extends TestCase
         $host = User::factory()->create();
         $office = Office::factory()->for($host)->create();
 
-        $response = $this->get("api/offices?user_id=" . $host->id)->dump();
+        $response = $this->get("api/offices?user_id=" . $host->id);
 
         $response->assertOk();
 
@@ -74,7 +74,7 @@ class OfficeControllerTest extends TestCase
 
          $this->actingAs($user);
 
-         $response = $this->get("api/offices?user_id=" . $user->id)->dump();
+         $response = $this->get("api/offices?user_id=" . $user->id);
 
          $response->assertOk()
              ->assertJsonCount(3,"data");
@@ -113,7 +113,7 @@ class OfficeControllerTest extends TestCase
 
         $office->images()->create(["path" => "image.jpg"]);
 
-        $response = $this->get("api/offices?host_id=" . $user->id)->dump();
+        $response = $this->get("api/offices?host_id=" . $user->id);
 
         $this->assertNotNull($response->json("data")[0]["tags"]);
         $this->assertNotNull($response->json("data")[0]["images"]);
@@ -153,7 +153,7 @@ class OfficeControllerTest extends TestCase
             "title" => "furthest"
         ]);
 
-        $response = $this->get("api/offices?lat=39.400021&lng=30.015237")->dump();
+        $response = $this->get("api/offices?lat=39.400021&lng=30.015237");
 
         $this->assertEquals("closest", $response->json("data")[0]["title"]);
     }
@@ -174,7 +174,7 @@ class OfficeControllerTest extends TestCase
         Reservation::factory()->for($office)->create(["status" => Reservation::STATUS_ACTIVE]);
         Reservation::factory()->for($office)->create(["status" => Reservation::STATUS_CANCELLED]);
 
-        $response = $this->get("api/offices/" . $office->id)->dump();
+        $response = $this->get("api/offices/" . $office->id);
 
         $this->assertEquals($office->id, $response->json("data")["id"]);
         $this->assertEquals(1, $response->json("data")["reservations_count"]);
@@ -209,7 +209,7 @@ class OfficeControllerTest extends TestCase
             "price_per_day" => 10000,
             "monthly_discount" => 25,
             "tags" => [$tag->id, $tag2->id]
-        ])->dump();
+        ]);
 
         $response->assertCreated()
             ->assertJsonPath("data.title", "Deneme Başlığı")
@@ -244,7 +244,7 @@ class OfficeControllerTest extends TestCase
          $response = $this->patchJson("api/offices/" . $office->id, [
              "title" => $title,
              "tags" => [$tags[0]->id, $anotherTag->id]
-         ])->dump();
+         ]);
 
          $response->assertOk()
          ->assertJsonCount(2, "data.tags")
@@ -266,7 +266,7 @@ class OfficeControllerTest extends TestCase
 
         $response = $this->patchJson("api/offices/" . $office->id, [
             "title" => "unauthorized"
-        ])->dump();
+        ]);
 
         $response->assertStatus(Response::HTTP_FORBIDDEN);
     }
@@ -287,7 +287,7 @@ class OfficeControllerTest extends TestCase
 
         $this->patchJson("api/offices/" . $office->id, [
             "price_per_day" => 100
-        ])->dump();
+        ]);
 
         $this->assertDatabaseHas("offices", [
             "id" => $office->id,
@@ -337,7 +337,7 @@ class OfficeControllerTest extends TestCase
 
         $this->actingAs($user);
 
-        $response = $this->deleteJson("api/offices/" . $office->id)->dump();
+        $response = $this->deleteJson("api/offices/" . $office->id);
 
         $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
 
@@ -361,7 +361,7 @@ class OfficeControllerTest extends TestCase
 
         $response = $this->patchJson("api/offices/{$office->id}", [
             "featured_image_id" => $image->id
-        ])->dump();
+        ]);
 
         $response->assertOk()
             ->assertJsonPath("data.featured_image_id", $image->id);
@@ -385,7 +385,7 @@ class OfficeControllerTest extends TestCase
 
         $response = $this->patchJson("api/offices/{$office->id}", [
             "featured_image_id" => $image->id
-        ])->dump();
+        ]);
 
         $response->assertUnprocessable()
         ->assertInvalid("featured_image_id");
