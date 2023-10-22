@@ -49,6 +49,7 @@ Route::group(["prefix" => "reservations", "controller" => UserReservationControl
     Route::group(["middleware" => ["auth:sanctum", "verified"]], function () {
         Route::get("/", "index")->name("list");
         Route::post("/", "create")->name("create");
+        Route::delete("/{reservation}", "cancel")->name("cancel");
     });
 });
 

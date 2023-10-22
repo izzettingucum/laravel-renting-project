@@ -8,7 +8,7 @@ use App\Http\Resources\OfficeResource;
 use App\Models\Office;
 use App\Models\Reservation;
 use App\Models\User;
-use App\Notifications\OfficePendingApproval;
+use App\Notifications\Offices\OfficePendingApproval;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
@@ -38,6 +38,11 @@ class OfficeController extends Controller
             })
             ->when(request("lat") && request("lng"), function ($query) {
                 return $query->NearestTo(request("lat"), request("lng"));
+            })
+            ->when(request("tags"), function ($query) {
+                return $query->whereHas("tags", function($query) {
+                    return $query->whereIn("tags.name", request("tags"));
+                }, "=", count(request("tags")));
             })
             ->latest("id")
             ->with(["images", "tags", "user"])

@@ -1,27 +1,25 @@
 <?php
 
-namespace App\Notifications;
+namespace App\Notifications\Reservations;
 
-use App\Models\Office;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class OfficePendingApproval extends Notification implements ShouldQueue
+class NewHostReservation extends Notification
 {
     use Queueable;
 
-    public $office;
+    public $reservation;
 
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct(Office $office)
+    public function __construct($reservation)
     {
-        $this->office = $office;
+        $this->reservation = $reservation;
     }
 
     /**

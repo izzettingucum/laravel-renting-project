@@ -1,12 +1,15 @@
 <?php
 
-namespace Tests\Feature;
+namespace Reservations;
 
 use App\Models\Office;
 use App\Models\Reservation;
 use App\Models\User;
+use App\Notifications\Reservations\NewHostReservation;
+use App\Notifications\Reservations\NewUserReservation;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class UserReservationControllerTest extends TestCase
@@ -237,7 +240,7 @@ class UserReservationControllerTest extends TestCase
             "office_id" => $office->id,
             "start_date" => now()->addDay(2),
             "end_date" => now()->addDay(3)
-        ])->dump();
+        ]);
 
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(["start_date" => "you cannot make a reservation for only 1 day"]);
@@ -264,7 +267,7 @@ class UserReservationControllerTest extends TestCase
             "office_id" => $office->id,
             "start_date" => now()->addDay(4),
             "end_date" => now()->addDay(37)
-        ])->dump();
+        ]);
 
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(["start_date" => "you cannot make a reservation during this time"]);
@@ -291,5 +294,137 @@ class UserReservationControllerTest extends TestCase
 
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(["office_id" => "you cannot make a reservation on a hidden office"]);
+    }
+
+    /**
+     * @test
+     */
+    public function itCannotMakeReservationOnSameDay()
+    {
+        $user = User::factory()->create();
+
+        $office = Office::factory()->create();
+
+        $this->actingAs($user);
+
+        $response = $this->postJson("api/reservations", [
+            "office_id" => $office->id,
+            "start_date" => now(),
+            "end_date" => now()->addDay(37)
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(["start_date" => "The start date must be a date after " . now()->addDay()->format("Y-m-d")]);
+    }
+
+    /**
+     * @test
+     */
+    public function itSendsNotificationOnNewReservations()
+    {
+        Notification::fake();
+
+        $host = User::factory()->create();
+
+        $office = Office::factory()->for($host)->create();
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user);
+
+        $response = $this->postJson("api/reservations", [
+            "office_id" => $office->id,
+            "start_date" => now()->addDay(4),
+            "end_date" => now()->addDay(37)
+        ]);
+
+        $response->assertCreated();
+
+        Notification::assertSentTo($user, NewUserReservation::class);
+        Notification::assertSentTo($host, NewHostReservation::class);
+    }
+
+    /**
+     * @test
+     */
+    public function itDoesntCancelTheReservationBelongsToAnotherUser()
+    {
+        $user1 = User::factory()->create();
+        $user2 = User::factory()->create();
+
+        $reservation = Reservation::factory()->for($user1)->create([
+            "start_date" => now()->addDay(2),
+            "end_date" => now()->addDay(24)
+        ]);
+
+        $this->actingAs($user2);
+
+        $response = $this->deleteJson("api/reservations/{$reservation->id}");
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(["reservation" => "you cannot cancel this reservation."]);
+    }
+
+    /**
+     * @test
+     */
+    public function itCancelsTheReservation()
+    {
+        Notification::fake();
+
+        $host = User::factory()->create();
+        $user = User::factory()->create();
+
+        $office = Office::factory()->for($host)->create();
+
+        $reservation = Reservation::factory()->for($office)->for($user)->create();
+
+        $this->actingAs($user);
+
+        $response = $this->deleteJson("api/reservations/{$reservation->id}");
+
+        Notification::assertSentTo($user, NewUserReservation::class);
+        Notification::assertSentTo($host, NewHostReservation::class);
+
+        $response->assertOk()
+            ->assertJsonPath("data.status", Reservation::STATUS_CANCELLED);
+    }
+
+    /**
+     * @test
+     */
+    public function itDoesntCancelTheReservationAlreadyStarted()
+    {
+        $user = User::factory()->create();
+
+        $reservation = Reservation::factory()->for($user)->create([
+            "start_date" => now()->subDay(1)
+        ]);
+
+        $this->actingAs($user);
+
+        $response = $this->deleteJson("api/reservations/{$reservation->id}");
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(["reservation" => "you cannot cancel this reservation."]);
+    }
+
+    /**
+     * @test
+     */
+    public function itDoesntCancelTheCancelledReservations()
+    {
+        $user = User::factory()->create();
+
+        $reservation = Reservation::factory()->for($user)->create([
+            "status" => Reservation::STATUS_CANCELLED
+        ]);
+
+        $this->actingAs($user);
+
+        $response = $this->deleteJson("api/reservations/{$reservation->id}");
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(["reservation" => "you cannot cancel this reservation."]);
     }
 }

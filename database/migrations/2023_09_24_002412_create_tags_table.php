@@ -19,10 +19,6 @@ class CreateTagsTable extends Migration
             $table->string("name");
         });
 
-        Tag::create(["name" => "has_ac"]);
-        Tag::create(["name" => "has_private_bathroom"]);
-        Tag::create(["name" => "has_coffee_machine"]);
-
         Schema::create('offices_tags', function (Blueprint $table) {
             $table->id();
             $table->foreignId("office_id")->index()->constrained("offices")->onDelete("cascade");

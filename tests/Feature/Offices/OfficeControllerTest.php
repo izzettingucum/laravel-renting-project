@@ -1,13 +1,12 @@
 <?php
 
-namespace Tests\Feature;
+namespace Offices;
 
-use App\Models\Image;
 use App\Models\Office;
 use App\Models\Reservation;
 use App\Models\Tag;
 use App\Models\User;
-use App\Notifications\OfficePendingApproval;
+use App\Notifications\Offices\OfficePendingApproval;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\Response;
@@ -17,7 +16,7 @@ use Tests\TestCase;
 
 class OfficeControllerTest extends TestCase
 {
-    Use LazilyRefreshDatabase, WithFaker;
+    use LazilyRefreshDatabase, WithFaker;
 
     /**
      * @test
@@ -50,36 +49,64 @@ class OfficeControllerTest extends TestCase
         $this->assertEquals($office->id, $response->json("data")[0]["id"]);
     }
 
-     /**
+    /**
      * @test
      */
-     public function itListsOfficesIncludingHiddenAndUnapprovedIfFilteringForTheCurrentLoggedInUser()
-     {
-         $user = User::factory()->create();
+    public function itFiltersByTags()
+    {
+        $officeCount = 2;
+        $tagCount = 4;
 
-         $office1 = Office::factory()->for($user)->create([
-             "approval_status" => Office::APPROVAL_APPROVED,
-             "hidden" => false
-         ]);
+        $tags = Tag::factory($tagCount)->create();
 
-         $office2 = Office::factory()->for($user)->create([
-             "approval_status" => Office::APPROVAL_PENDING,
-             "hidden" => false
-         ]);
+        $office = Office::factory($officeCount)->hasAttached($tags)->create();
+        Office::factory()->hasAttached($tags->first());
 
-         $office3 = Office::factory()->for($user)->create([
-             "approval_status" => Office::APPROVAL_PENDING,
-             "hidden" => true
-         ]);
+        $user = User::factory()->create();
 
-         $this->actingAs($user);
+        $this->actingAs($user);
 
-         $response = $this->get("api/offices?user_id=" . $user->id);
+        $response = $this->getJson("api/offices?" . http_build_query([
+            "tags" => $tags->pluck("name")->toArray()
+        ]));
 
-         $response->assertOk()
-             ->assertJsonCount(3,"data");
+        $response->assertOk()
+            ->assertJsonPath("data.0.id", $office->last()->id)
+            ->assertJsonCount($officeCount, "data")
+            ->assertJsonCount($tagCount, "data.0.tags");
 
-     }
+    }
+
+    /**
+     * @test
+     */
+    public function itListsOfficesIncludingHiddenAndUnapprovedIfFilteringForTheCurrentLoggedInUser()
+    {
+        $user = User::factory()->create();
+
+        $office1 = Office::factory()->for($user)->create([
+            "approval_status" => Office::APPROVAL_APPROVED,
+            "hidden" => false
+        ]);
+
+        $office2 = Office::factory()->for($user)->create([
+            "approval_status" => Office::APPROVAL_PENDING,
+            "hidden" => false
+        ]);
+
+        $office3 = Office::factory()->for($user)->create([
+            "approval_status" => Office::APPROVAL_PENDING,
+            "hidden" => true
+        ]);
+
+        $this->actingAs($user);
+
+        $response = $this->get("api/offices?user_id=" . $user->id);
+
+        $response->assertOk()
+            ->assertJsonCount(3, "data");
+
+    }
 
     /**
      * @test
@@ -99,7 +126,7 @@ class OfficeControllerTest extends TestCase
     }
 
     /**
-     *@test
+     * @test
      */
     public function itIncludesImagesTagsAndUser()
     {
@@ -111,7 +138,7 @@ class OfficeControllerTest extends TestCase
 
         $office->tags()->attach($tag);
 
-        $office->images()->create(["path" => "image.jpg"]);
+        $office->images()->create(["path" => $this->faker->word . ".jpg"]);
 
         $response = $this->get("api/offices?host_id=" . $user->id);
 
@@ -169,7 +196,7 @@ class OfficeControllerTest extends TestCase
 
         $office = Office::factory()->for($user)->create();
         $office->tags()->attach($tag);
-        $office->images()->create(["path" => "image.jpg"]);
+        $office->images()->create(["path" => $this->faker->word . ".jpg"]);
 
         Reservation::factory()->for($office)->create(["status" => Reservation::STATUS_ACTIVE]);
         Reservation::factory()->for($office)->create(["status" => Reservation::STATUS_CANCELLED]);
@@ -223,36 +250,36 @@ class OfficeControllerTest extends TestCase
         Notification::assertSentTo($admin, OfficePendingApproval::class);
     }
 
-     /**
+    /**
      * @test
      */
 
-     public function itUpdatesAnOffice()
-     {
-         $user = User::factory()->create();
+    public function itUpdatesAnOffice()
+    {
+        $user = User::factory()->create();
 
-         $tags = Tag::factory(2)->create();
-         $anotherTag = Tag::factory()->create();
+        $tags = Tag::factory(2)->create();
+        $anotherTag = Tag::factory()->create();
 
-         $office = Office::factory()->for($user)->create();
-         $office->tags()->attach($tags);
+        $office = Office::factory()->for($user)->create();
+        $office->tags()->attach($tags);
 
-         $this->actingAs($user);
+        $this->actingAs($user);
 
-         $title = "Updated Title";
+        $title = "Updated Title";
 
-         $response = $this->patchJson("api/offices/" . $office->id, [
-             "title" => $title,
-             "tags" => [$tags[0]->id, $anotherTag->id]
-         ]);
+        $response = $this->patchJson("api/offices/" . $office->id, [
+            "title" => $title,
+            "tags" => [$tags[0]->id, $anotherTag->id]
+        ]);
 
-         $response->assertOk()
-         ->assertJsonCount(2, "data.tags")
-         ->assertJsonPath("data.tags.0.id", $tags[0]->id)
-         ->assertJsonPath("data.title", $title);
-     }
+        $response->assertOk()
+            ->assertJsonCount(2, "data.tags")
+            ->assertJsonPath("data.tags.0.id", $tags[0]->id)
+            ->assertJsonPath("data.title", $title);
+    }
 
-     /**
+    /**
      * @test
      */
     public function itDoesntUpdateOfficeThatDoesntBelongsToUser()
@@ -297,32 +324,32 @@ class OfficeControllerTest extends TestCase
         Notification::assertSentTo($admin, OfficePendingApproval::class);
     }
 
-     /**
+    /**
      * @test
      */
-     public function itCanDeleteOffices()
-     {
-         Storage::put("office_image.jpg", "empty");
+    public function itCanDeleteOffices()
+    {
+        Storage::put("office_image.jpg", "empty");
 
-         $user = User::factory()->create();
-         $office = Office::factory()->for($user)->create();
+        $user = User::factory()->create();
+        $office = Office::factory()->for($user)->create();
 
-         $image = $office->images()->create([
-             "path" => "office_image.jpg"
-         ]);
+        $image = $office->images()->create([
+            "path" => "office_image.jpg"
+        ]);
 
-         $this->actingAs($user);
+        $this->actingAs($user);
 
-         $response = $this->deleteJson("api/offices/{$office->id}");
+        $response = $this->deleteJson("api/offices/{$office->id}");
 
-         $response->assertOk();
+        $response->assertOk();
 
-         $this->assertSoftDeleted($office);
+        $this->assertSoftDeleted($office);
 
-         $this->assertModelMissing($image);
+        $this->assertModelMissing($image);
 
-         Storage::assertMissing("office_image.jpg");
-     }
+        Storage::assertMissing("office_image.jpg");
+    }
 
     /**
      * @test
@@ -350,12 +377,12 @@ class OfficeControllerTest extends TestCase
      */
     public function itUpdatetedTheFeatureImageOfAnOffice()
     {
-         $user = User::factory()->create();
-         $office = Office::factory()->for($user)->create();
+        $user = User::factory()->create();
+        $office = Office::factory()->for($user)->create();
 
-         $image = $office->images()->create([
+        $image = $office->images()->create([
             "path" => "image.jpg"
-         ]);
+        ]);
 
         $this->actingAs($user);
 
@@ -378,7 +405,7 @@ class OfficeControllerTest extends TestCase
         $office2 = Office::factory()->create();
 
         $image = $office2->images()->create([
-            "path" =>  $this->faker->word . ".jpg"
+            "path" => $this->faker->word . ".jpg"
         ]);
 
         $this->actingAs($user);
@@ -388,6 +415,6 @@ class OfficeControllerTest extends TestCase
         ]);
 
         $response->assertUnprocessable()
-        ->assertInvalid("featured_image_id");
+            ->assertInvalid("featured_image_id");
     }
 }

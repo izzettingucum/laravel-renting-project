@@ -6,6 +6,7 @@ use App\Models\Office;
 use App\Models\Reservation;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 class ReservationFactory extends Factory
 {
@@ -21,8 +22,9 @@ class ReservationFactory extends Factory
             "office_id" => Office::factory(),
             "price" => $this->faker->numberBetween(10000,20000),
             "status" => Reservation::STATUS_ACTIVE,
-            "start_date" => now()->addDay(1)->format("Y-m-d"),
-            "end_date" => now()->addDay(5)->format("Y-m-d")
+            "start_date" => now()->addDay(2)->format("Y-m-d"),
+            "end_date" => now()->addDay(16)->format("Y-m-d"),
+            "wifi_password" => Str::random()
         ];
     }
 }

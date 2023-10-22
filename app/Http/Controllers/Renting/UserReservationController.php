@@ -8,11 +8,15 @@ use App\Http\Requests\UserReservation\IndexRequest;
 use App\Http\Resources\ReservationResource;
 use App\Models\Office;
 use App\Models\Reservation;
+use App\Notifications\Reservations\NewHostReservation;
+use App\Notifications\Reservations\NewUserReservation;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class UserReservationController extends Controller
@@ -26,12 +30,12 @@ class UserReservationController extends Controller
         $reservations = Reservation::query()
             ->where("user_id", auth()->id())
             ->when(request("office_id"),
-            function ($query) {
-                return $query->where("office_id", request("office_id"));
+                function ($query) {
+                    return $query->where("office_id", request("office_id"));
                 }
             )->when(request("status"),
-            function ($query) {
-                return $query->where("status", request("status"));
+                function ($query) {
+                    return $query->where("status", request("status"));
                 }
             )->when(request('from_date') && request('to_date'),
                 function ($query) {
@@ -45,7 +49,7 @@ class UserReservationController extends Controller
         );
     }
 
-    public function create(CreateRequest $request)
+    public function create(CreateRequest $request): ReservationResource
     {
         abort_unless(auth()->user()->tokenCan("reservations.make"),
             Response::HTTP_FORBIDDEN
@@ -96,9 +100,38 @@ class UserReservationController extends Controller
                 "start_date" => $request->start_date,
                 "end_date" => $request->end_date,
                 "status" => Reservation::STATUS_ACTIVE,
+                "wifi_password" => Str::random(),
                 "price" => $price
             ]);
         });
+
+        Notification::send(auth()->user(), new NewUserReservation($reservation));
+        Notification::send($office->user, new NewHostReservation($reservation));
+
+        return ReservationResource::make(
+            $reservation->load("office")
+        );
+    }
+
+    public function cancel(Reservation $reservation): ReservationResource
+    {
+        abort_unless(auth()->user()->tokenCan("reservations.make"),
+            Response::HTTP_FORBIDDEN
+        );
+
+        throw_if(
+            auth()->id() != $reservation->user_id ||
+            $reservation->status == Reservation::STATUS_CANCELLED ||
+            $reservation->start_date < now()->toDateString(),
+            ValidationException::withMessages(["reservation" => "you cannot cancel this reservation."])
+        );
+
+        $reservation->update([
+            "status" => Reservation::STATUS_CANCELLED
+        ]);
+
+        Notification::send(auth()->user(), new NewUserReservation($reservation));
+        Notification::send($reservation->office->user, new NewHostReservation($reservation));
 
         return ReservationResource::make(
             $reservation->load("office")

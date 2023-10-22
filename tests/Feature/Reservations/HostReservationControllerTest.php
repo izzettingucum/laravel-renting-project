@@ -1,9 +1,8 @@
 <?php
 
-namespace Tests\Feature;
+namespace Reservations;
 
 use App\Models\Office;
-
 use App\Models\Reservation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;

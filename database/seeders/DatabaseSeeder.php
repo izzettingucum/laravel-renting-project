@@ -3,7 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\Office;
+use App\Models\Reservation;
+use App\Models\Tag;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -14,6 +17,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        $office = Office::factory()->create();
+       //
     }
 }

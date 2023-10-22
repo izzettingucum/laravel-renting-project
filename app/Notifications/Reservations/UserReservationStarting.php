@@ -1,24 +1,27 @@
 <?php
 
-namespace App\Notifications;
+namespace App\Notifications\Reservations;
 
+use App\Models\Reservation;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class NewUserReservation extends Notification
+class UserReservationStarting extends Notification implements ShouldQueue
 {
     use Queueable;
+
+    public $reservation;
 
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(Reservation $reservation)
     {
-        //
+        $this->reservation = $reservation;
     }
 
     /**
