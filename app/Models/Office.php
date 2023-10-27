@@ -16,7 +16,6 @@ class Office extends Model
 
     const APPROVAL_PENDING = 1;
     const APPROVAL_APPROVED = 2;
-    const APPROVAL_REJECTED = 3;
 
     protected $casts = [
         "lat" => "float",
@@ -61,6 +60,36 @@ class Office extends Model
                 'POW(69.1 * (lat - ?), 2) + POW(69.1 * (? - lng) * COS(lat / 57.3), 2)',
                 [$lat, $lng]
             );
+    }
+
+    public function scopeFilterByApplyApprovalAndNonHidden($query)
+    {
+        return $query->where("approval_status", Office::APPROVAL_APPROVED)
+            ->where("hidden", false);
+    }
+
+    public function scopeFilterByUserId($query, $userId)
+    {
+        return $query->where("user_id", $userId);
+    }
+
+    public function scopeFilterByVisitorId($query, $visitorId)
+    {
+        return $query->whereRelation("reservations", "user_id", "=", $visitorId);
+    }
+
+    public function scopeFilterByDistance($query, $lat, $lng)
+    {
+        return $query->nearestTo($lat, $lng);
+    }
+
+    public function scopeFilterByTags($query, $tags)
+    {
+        $query->whereHas("tags", function ($query) use ($tags) {
+            $query->whereIn("tags.name", $tags);
+        }, "=", count($tags));
+
+        return $query;
     }
 
 }

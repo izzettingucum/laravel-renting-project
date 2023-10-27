@@ -67,8 +67,8 @@ class OfficeControllerTest extends TestCase
         $this->actingAs($user);
 
         $response = $this->getJson("api/offices?" . http_build_query([
-            "tags" => $tags->pluck("name")->toArray()
-        ]));
+                "tags" => $tags->pluck("name")->toArray()
+            ]));
 
         $response->assertOk()
             ->assertJsonPath("data.0.id", $office->last()->id)
@@ -180,7 +180,7 @@ class OfficeControllerTest extends TestCase
             "title" => "furthest"
         ]);
 
-        $response = $this->get("api/offices?lat=39.400021&lng=30.015237");
+        $response = $this->getJson("api/offices?lat=39.400021&lng=30.015237");
 
         $this->assertEquals("closest", $response->json("data")[0]["title"]);
     }

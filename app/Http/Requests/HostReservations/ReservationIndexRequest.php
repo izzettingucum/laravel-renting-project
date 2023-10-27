@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Requests\UserReservation;
+namespace App\Http\Requests\HostReservations;
 
 use App\Models\Reservation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
-class IndexRequest extends FormRequest
+class ReservationIndexRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

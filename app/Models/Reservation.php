@@ -31,6 +31,26 @@ class Reservation extends Model
         return $this->belongsTo(Office::class);
     }
 
+    public function scopeFilterByOfficeId($query, $officeId)
+    {
+        return $query->where("office_id", $officeId);
+    }
+
+    public function scopeFilterByUserId($query, $userId)
+    {
+        return $query->where("user_id", $userId);
+    }
+
+    public function scopeFilterByStatus($query, $status)
+    {
+        return $query->where("status", $status);
+    }
+
+    public function scopeFilterByDateRange($query, $fromDate, $toDate)
+    {
+        return $query->betweenDates($fromDate, $toDate);
+    }
+
     public function scopeActiveBetween($query, $from, $to)
     {
         return $query->whereStatus(Reservation::STATUS_ACTIVE)

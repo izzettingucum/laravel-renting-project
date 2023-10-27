@@ -1,20 +1,29 @@
 <?php
 
-namespace App\Http\Controllers\Renting;
+namespace App\Services;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\OfficeImageRequest;
-use App\Http\Resources\ImageResource;
+use App\Http\DTO\OfficeImageDTO;
 use App\Models\Image;
 use App\Models\Office;
-use Illuminate\Http\Request;
+use App\Repositories\OfficeImagesRepository;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
-class OfficeImageController extends Controller
+class OfficeImageService
 {
-    public function store(Office $office, OfficeImageRequest $request)
+    use AuthorizesRequests;
+
+    protected $officeImagesRepository, $officeImageDTO;
+
+    public function __construct(OfficeImagesRepository $officeImagesRepository, OfficeImageDTO $officeImageDTO)
+    {
+        $this->officeImagesRepository = $officeImagesRepository;
+        $this->officeImageDTO = $officeImageDTO;
+    }
+
+    public function store(Office $office, $request)
     {
         abort_unless(auth()->user()->tokenCan("office.update"),
             Response::HTTP_FORBIDDEN
@@ -26,13 +35,14 @@ class OfficeImageController extends Controller
 
         $path = $request->file("image")->storePublicly("/");
 
-        $image = $office->images()->create([
+        $officeImageDTO = new $this->officeImageDTO([
+            "office_id" => $office->id,
             "path" => $path
         ]);
 
-        return ImageResource::make(
-            $image
-        );
+        $image = $this->officeImagesRepository->create($officeImageDTO);
+
+        return $image;
     }
 
     public function delete(Office $office, Image $image)
@@ -55,6 +65,10 @@ class OfficeImageController extends Controller
 
         Storage::delete($image->path);
 
-        $image->delete();
+        $officeImageDTO = new $this->officeImageDTO([
+            "id" => $image->id
+        ]);
+
+        $this->officeImagesRepository->delete($officeImageDTO);
     }
 }

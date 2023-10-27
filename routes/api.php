@@ -1,11 +1,10 @@
 <?php
 
-use App\Http\Controllers\Renting\HostReservationController;
-use App\Http\Controllers\Renting\OfficeController;
-use App\Http\Controllers\Renting\OfficeImageController;
-use App\Http\Controllers\Renting\TagController;
-use App\Http\Controllers\Renting\UserReservationController;
-use Illuminate\Http\Request;
+use App\Http\Controllers\Offices\OfficeController;
+use App\Http\Controllers\Offices\OfficeImageController;
+use App\Http\Controllers\Reservations\HostReservationController;
+use App\Http\Controllers\Reservations\UserReservationController;
+use App\Http\Controllers\TagController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -28,18 +27,18 @@ Route::group(["prefix" => "tags", "controller" => TagController::class, "as" => 
 // Offices...
 Route::group(["prefix" => "offices", "controller" => OfficeController::class, "as" => "offices."], function () {
     Route::get('/', "index")->name("list");
-    Route::get('/{office}',  "show")->name("show");
+    Route::get('/{id}',  "show")->name("show");
     Route::group(["middleware" => ["auth:sanctum", "verified"]], function () {
         Route::post('/', "create")->name("create");
-        Route::patch('/{office}', "update")->name("update");
-        Route::delete('/{office}', "delete")->name("delete");
+        Route::patch('/{id}', "update")->name("update");
+        Route::delete('/{id}', "delete")->name("delete");
     });
 });
 
 // Office Photos...
 Route::group(["prefix" => "offices/{office}/images", "controller" => OfficeImageController::class, "as" =>"offices.images."], function () {
     Route::group(["middleware" => ["auth:sanctum", "verified"]], function () {
-        Route::post("/", "store")->name("create");
+        Route::post("", "store")->name("create");
         Route::delete("/{image:id}", "delete")->name("delete");
     });
 });
@@ -49,7 +48,7 @@ Route::group(["prefix" => "reservations", "controller" => UserReservationControl
     Route::group(["middleware" => ["auth:sanctum", "verified"]], function () {
         Route::get("/", "index")->name("list");
         Route::post("/", "create")->name("create");
-        Route::delete("/{reservation}", "cancel")->name("cancel");
+        Route::delete("/{id}", "cancel")->name("cancel");
     });
 });
 

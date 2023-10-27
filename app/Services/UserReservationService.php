@@ -1,17 +1,18 @@
 <?php
 
-namespace App\Http\Controllers\Renting;
+namespace App\Services;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\UserReservation\CreateRequest;
-use App\Http\Requests\UserReservation\IndexRequest;
-use App\Http\Resources\ReservationResource;
+use App\Http\DTO\OfficeDTO;
+use App\Http\DTO\UserReservationDTO;
+use App\Http\Requests\UserReservations\CreateRequest;
+use App\Http\Requests\UserReservations\IndexRequest;
 use App\Models\Office;
 use App\Models\Reservation;
 use App\Notifications\Reservations\NewHostReservation;
 use App\Notifications\Reservations\NewUserReservation;
+use App\Repositories\OfficesRepository;
+use App\Repositories\UserReservationsRepository;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -19,44 +20,53 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-class UserReservationController extends Controller
+class UserReservationService
 {
-    public function index(IndexRequest $request): AnonymousResourceCollection
+    protected $userReservationsRepository, $officesRepository, $userReservationDTO, $officeDTO;
+
+    public function __construct(
+        UserReservationsRepository $userReservationsRepository,
+        OfficesRepository $officesRepository,
+        UserReservationDTO $userReservationDTO,
+        OfficeDTO $officeDTO
+    )
+    {
+        $this->userReservationsRepository = $userReservationsRepository;
+        $this->officesRepository = $officesRepository;
+        $this->userReservationDTO = $userReservationDTO;
+        $this->officeDTO = $officeDTO;
+    }
+
+    public function index(IndexRequest $request)
     {
         abort_unless(auth()->user()->tokenCan("reservations.show"),
             Response::HTTP_FORBIDDEN
         );
 
-        $reservations = Reservation::query()
-            ->where("user_id", auth()->id())
-            ->when(request("office_id"),
-                function ($query) {
-                    return $query->where("office_id", request("office_id"));
-                }
-            )->when(request("status"),
-                function ($query) {
-                    return $query->where("status", request("status"));
-                }
-            )->when(request('from_date') && request('to_date'),
-                function ($query) {
-                    return $query->betweenDates(request('from_date'), request('to_date'));
-                }
-            )->with(["office.featuredImage"])
-            ->paginate(20);
+        $userReservationDTO = new $this->userReservationDTO([
+            "userId" => auth()->id(),
+            "officeId" => $request->office_id,
+            "status" => $request->status,
+            "fromDate" => $request->from_date,
+            "toDate" => $request->to_date,
+            "perPage" => 20
+        ]);
 
-        return ReservationResource::collection(
-            $reservations
-        );
+        $reservations = $this->userReservationsRepository->getUserReservations($userReservationDTO);
+
+        return $reservations;
     }
 
-    public function create(CreateRequest $request): ReservationResource
+    public function create(CreateRequest $request)
     {
+
         abort_unless(auth()->user()->tokenCan("reservations.make"),
             Response::HTTP_FORBIDDEN
         );
 
         try {
-            $office = Office::findOrFail($request->office_id);
+            $officeDTO = new $this->officeDTO(["id" => $request->office_id]);
+            $office = $this->officesRepository->findById($officeDTO);
         } catch (ModelNotFoundException $e) {
             throw ValidationException::withMessages([
                 "office_id" => "Invalid office_id"
@@ -94,30 +104,36 @@ class UserReservationController extends Controller
                 $price = $price - ($price * $office->monthly_discount / 100);
             }
 
-            return Reservation::create([
-                "user_id" => auth()->id(),
-                "office_id" => $office->id,
-                "start_date" => $request->start_date,
-                "end_date" => $request->end_date,
+            $userReservationDTO = new $this->userReservationDTO([
+                "userId" => auth()->id(),
+                "officeId" => $office->id,
+                "price" => $price,
                 "status" => Reservation::STATUS_ACTIVE,
                 "wifi_password" => Str::random(),
-                "price" => $price
+                "startDate" => $request->start_date,
+                "endDate" => $request->end_date
             ]);
+
+            $reservation = $this->userReservationsRepository->store($userReservationDTO);
+
+            return $reservation;
         });
 
         Notification::send(auth()->user(), new NewUserReservation($reservation));
         Notification::send($office->user, new NewHostReservation($reservation));
 
-        return ReservationResource::make(
-            $reservation->load("office")
-        );
+        return $reservation;
     }
 
-    public function cancel(Reservation $reservation): ReservationResource
+    public function cancel($id)
     {
         abort_unless(auth()->user()->tokenCan("reservations.make"),
             Response::HTTP_FORBIDDEN
         );
+
+        $userReservationDTO = new $this->userReservationDTO(["id" => $id]);
+
+        $reservation = $this->userReservationsRepository->findById($userReservationDTO);
 
         throw_if(
             auth()->id() != $reservation->user_id ||
@@ -126,15 +142,13 @@ class UserReservationController extends Controller
             ValidationException::withMessages(["reservation" => "you cannot cancel this reservation."])
         );
 
-        $reservation->update([
-            "status" => Reservation::STATUS_CANCELLED
-        ]);
+        $userReservationDTO->status = Reservation::STATUS_CANCELLED;
+
+        $reservation = $this->userReservationsRepository->updateStatus($userReservationDTO);
 
         Notification::send(auth()->user(), new NewUserReservation($reservation));
         Notification::send($reservation->office->user, new NewHostReservation($reservation));
 
-        return ReservationResource::make(
-            $reservation->load("office")
-        );
+        return $reservation;
     }
 }
