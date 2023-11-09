@@ -1,25 +1,23 @@
 <?php
 
-namespace App\Repositories;
+namespace App\Repositories\OfficeRepositories;
 
-use App\Http\DTO\OfficeImageDTO;
+use App\DTO\OfficeImageDTO;
 use App\Models\Image;
 use App\Models\Office;
 use App\Repositories\Interfaces\OfficeImagesInterface;
 
 class OfficeImagesRepository implements OfficeImagesInterface
 {
-    protected $imageModel, $officeModel;
+    protected $imageModel;
 
-    public function __construct(Image $imageModel, Office $officeModel)
+    public function __construct(Image $imageModel)
     {
         $this->imageModel = $imageModel;
-        $this->officeModel = $officeModel;
     }
 
-    public function create(OfficeImageDTO $officeImageDTO)
+    public function create(Office $office, OfficeImageDTO $officeImageDTO)
     {
-        $office = $this->officeModel->findOrFail($officeImageDTO->office_id);
         return $office->images()->create([
             "path" => $officeImageDTO->path
         ]);

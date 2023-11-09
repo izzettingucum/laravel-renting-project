@@ -3,15 +3,11 @@
 namespace App\Http\Controllers\Offices;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Offices\CrudRequest;
+use App\Http\Requests\Offices\CreateRequest;
 use App\Http\Requests\Offices\OfficeListRequest;
+use App\Http\Requests\Offices\UpdateRequest;
 use App\Http\Resources\OfficeResource;
-use App\Models\Office;
-use App\Models\Reservation;
-use App\Models\User;
-use App\Notifications\Offices\OfficePendingApproval;
-use App\Repositories\OfficesRepository;
-use App\Services\OfficeService;
+use App\Services\OfficeServices\OfficeService;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class OfficeController extends Controller
@@ -41,26 +37,28 @@ class OfficeController extends Controller
         );
     }
 
-    public function create(CrudRequest $request) : OfficeResource
+    public function create(CreateRequest $request) : OfficeResource
     {
-        $office = $this->officeService->create($request);
+        $office = $this->officeService->createOffice($request->toArray());
 
         return OfficeResource::make(
-            $office->load(["images", "tags", "user"])
+            $office
         );
     }
 
-    public function update($id, CrudRequest $request)
+    public function update($id, UpdateRequest $request): OfficeResource
     {
-        $office = $this->officeService->update($id, $request);
+        $office = $this->officeService->findOfficeById($id);
+        $updateOffice = $this->officeService->updateOffice($office, $request->toArray());
 
         return OfficeResource::make(
-            $office->load("images", "tags", "user")
+            $updateOffice
         );
     }
 
     public function delete($id)
     {
-        $this->officeService->delete($id);
+        $office = $this->officeService->findOfficeById($id);
+        $this->officeService->delete($office);
     }
 }

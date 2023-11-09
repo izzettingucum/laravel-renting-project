@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Validator;
 
 class OfficeImageRequest extends FormRequest
 {
@@ -26,5 +27,12 @@ class OfficeImageRequest extends FormRequest
         return [
             "image" => ["required", "file", "max:5000", "mimes:jpg,png"]
         ];
+    }
+
+    public function validated()
+    {
+        $validator = Validator::make($this->all(), $this->rules());
+
+        return $validator->validated();
     }
 }

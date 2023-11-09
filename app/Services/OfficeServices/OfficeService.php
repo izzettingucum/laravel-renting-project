@@ -1,17 +1,16 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\OfficeServices;
 
-use App\Http\DTO\OfficeDTO;
-use App\Http\Requests\Offices\CrudRequest;
+use App\DTO\OfficeDTO;
+use App\Events\OfficeCreated;
 use App\Http\Requests\Offices\OfficeListRequest;
 use App\Models\Office;
 use App\Models\Reservation;
-use App\Models\User;
-use App\Notifications\Offices\OfficePendingApproval;
-use App\Repositories\OfficesRepository;
+use App\Notifications\Offices\OfficeUpdatedNotification;
+use App\Repositories\OfficeRepositories\OfficesRepository;
+use App\Repositories\UserRepository;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -22,18 +21,18 @@ class OfficeService
 {
     use AuthorizesRequests;
 
-    protected $officesRepository, $officeDTO;
+    protected $officesRepository, $officeDTO, $userRepository;
 
-    public function __construct(OfficesRepository $officesRepository, OfficeDTO $officeDTO)
+    public function __construct(OfficesRepository $officesRepository, OfficeDTO $officeDTO, UserRepository $userRepository)
     {
         $this->officesRepository = $officesRepository;
         $this->officeDTO = $officeDTO;
+        $this->userRepository = $userRepository;
     }
 
     public function index(OfficeListRequest $request)
     {
-
-        $officeDTO = new $this->officeDTO([
+        $officeDTO = $this->officeDTO->create([
             "userId" => $request->user_id,
             "visitorId" => $request->visitor_id,
             "lat" => $request->lat,
@@ -49,28 +48,19 @@ class OfficeService
 
     public function show($id)
     {
-        $officeDTO = new $this->officeDTO([
-            "id" => $id
-        ]);
-
-        $office = $this->officesRepository->findById($officeDTO);
+        $office = $this->findOfficeById($id);
 
         return $office;
     }
 
-    public function create(CrudRequest $request)
+    public function createOffice(array $attributes)
     {
-        abort_unless(auth()->user()->tokenCan("office.create"),
-            Response::HTTP_FORBIDDEN
-        );
-
-        $attributes = $request->validated();
         $attributes["approval_status"] = Office::APPROVAL_PENDING;
         $attributes["userId"] = auth()->id();
 
         $office = DB::transaction(function () use ($attributes) {
-            $office = $this->officesRepository->create(
-                new $this->officeDTO((Arr::except($attributes, "tags")))
+            $office = $this->officesRepository->createOffice(
+                $this->officeDTO->create((Arr::except($attributes, "tags")))
             );
 
             if (isset($attributes["tags"])) {
@@ -82,24 +72,14 @@ class OfficeService
             return $office;
         });
 
-        Notification::send(User::where("is_admin", true)->get(), new OfficePendingApproval($office));
+        event(new OfficeCreated($office));
 
         return $office;
     }
 
-    public function update($id, CrudRequest $request)
+    public function updateOffice(Office $office, array $attributes): Office
     {
-        abort_unless(auth()->user()->tokenCan("office.update"),
-            Response::HTTP_FORBIDDEN
-        );
-
-        $this->officeDTO->id = $id;
-
-        $office = $this->officesRepository->findById($this->officeDTO);
-
         $this->authorize("update", $office);
-
-        $attributes = $request->validated();
 
         $office->fill(Arr::except($attributes, "tags"));
 
@@ -108,32 +88,30 @@ class OfficeService
         }
 
         DB::transaction(function () use ($attributes, $office) {
-            $this->officesRepository->update($this->officeDTO->fill(Arr::except($attributes, "tags")));
+            $officeDTO = $this->officeDTO->create(Arr::except($attributes, "tags"));
+            $officeDTO->setId($office->id);
+
+            $this->officesRepository->update($officeDTO);
 
             if (isset($attributes["tags"])) {
-                $this->officesRepository->syncTags($this->officeDTO->fill(["tags" => $attributes["tags"]]));
+                $officeDTO->setTags($attributes["tags"]);
+                $this->officesRepository->syncTags($officeDTO);
             }
 
             return $office;
         });
 
+        $admins = $this->userRepository->getAllAdmins();
+
         if ($requiresReview) {
-            Notification::send(User::where("is_admin", true)->get(), new OfficePendingApproval($office));
+            Notification::send($admins, new OfficeUpdatedNotification($office));
         }
 
         return $office;
     }
 
-    public function delete($id)
+    public function delete(Office $office)
     {
-        abort_unless(auth()->user()->tokenCan("office.delete"),
-            Response::HTTP_FORBIDDEN
-        );
-
-        $this->officeDTO->id = $id;
-
-        $office = $this->officesRepository->findById($this->officeDTO);
-
         $this->authorize("delete", $office);
 
         throw_if(
@@ -147,5 +125,14 @@ class OfficeService
         });
 
         $this->officesRepository->delete($this->officeDTO);
+    }
+
+    public function findOfficeById($id)
+    {
+        $this->officeDTO->setId($id);
+
+        $office = $this->officesRepository->findById($this->officeDTO);
+
+        return $office;
     }
 }

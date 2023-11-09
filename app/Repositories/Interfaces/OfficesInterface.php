@@ -2,7 +2,7 @@
 
 namespace App\Repositories\Interfaces;
 
-use App\Http\DTO\OfficeDTO;
+use App\DTO\OfficeDTO;
 
 interface OfficesInterface
 {
@@ -10,7 +10,7 @@ interface OfficesInterface
 
     public function findById(OfficeDTO $officeDTO);
 
-    public function create(OfficeDTO $officeDTO);
+    public function createOffice(OfficeDTO $officeDTO);
 
     public function update(OfficeDTO $officeDTO);
 

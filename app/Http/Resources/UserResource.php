@@ -20,7 +20,8 @@ class UserResource extends JsonResource
                 "email",
                 "created_at",
                 "updated_at",
-                "email_verified_at"
+                "email_verified_at",
+                "user_role"
             ]))
         ];
     }

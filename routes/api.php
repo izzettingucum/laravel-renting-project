@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\Offices\OfficeController;
 use App\Http\Controllers\Offices\OfficeImageController;
 use App\Http\Controllers\Reservations\HostReservationController;
@@ -18,17 +22,30 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+
+// Auth...
+Route::group(["prefix" => "auth"], function ()
+{
+    Route::group(["middleware" => ["guest"]], function () {
+        Route::post("/register", [RegisterController::class, "register"])->name("register");
+        Route::post("/login", [LoginController::class, "login"])->name("login");
+    });
+
+    Route::group(["middleware" => ["auth"]], function () {
+        Route::post("/logout", [LogoutController::class, "logout"]);
+    });
+});
+
 // Tags...
 Route::group(["prefix" => "tags", "controller" => TagController::class, "as" => "tags."], function () {
     Route::get("/", TagController::class)->name("list");
 });
 
-
 // Offices...
 Route::group(["prefix" => "offices", "controller" => OfficeController::class, "as" => "offices."], function () {
     Route::get('/', "index")->name("list");
     Route::get('/{id}',  "show")->name("show");
-    Route::group(["middleware" => ["auth:sanctum", "verified"]], function () {
+    Route::group(["middleware" => ["auth:sanctum", "verified", "authorize"]], function () {
         Route::post('/', "create")->name("create");
         Route::patch('/{id}', "update")->name("update");
         Route::delete('/{id}', "delete")->name("delete");
@@ -37,7 +54,7 @@ Route::group(["prefix" => "offices", "controller" => OfficeController::class, "a
 
 // Office Photos...
 Route::group(["prefix" => "offices/{office}/images", "controller" => OfficeImageController::class, "as" =>"offices.images."], function () {
-    Route::group(["middleware" => ["auth:sanctum", "verified"]], function () {
+    Route::group(["middleware" => ["auth:sanctum", "verified", "authorize"]], function () {
         Route::post("", "store")->name("create");
         Route::delete("/{image:id}", "delete")->name("delete");
     });
@@ -45,7 +62,7 @@ Route::group(["prefix" => "offices/{office}/images", "controller" => OfficeImage
 
 // User Reservations...
 Route::group(["prefix" => "reservations", "controller" => UserReservationController::class, "as" => "reservations."], function () {
-    Route::group(["middleware" => ["auth:sanctum", "verified"]], function () {
+    Route::group(["middleware" => ["auth:sanctum", "verified", "authorize"]], function () {
         Route::get("/", "index")->name("list");
         Route::post("/", "create")->name("create");
         Route::delete("/{id}", "cancel")->name("cancel");
@@ -54,8 +71,16 @@ Route::group(["prefix" => "reservations", "controller" => UserReservationControl
 
 // Host Reservations...
 Route::group(["prefix" => "host/reservations", "controller" => HostReservationController::class, "as" => "host.reservations."], function () {
-    Route::group(["middleware" => ["auth:sanctum", "verified"]], function () {
+    Route::group(["middleware" => ["auth:sanctum", "verified", "authorize"]], function () {
         Route::get('', "index")->name("list");
     });
 });
+
+// Email Verification...
+Route::group(["prefix" => "email", "controller" => VerificationController::class, "as" => "verification."], function () {
+    Route::get("/verify/{id}/{hash}", "verify")->middleware(['auth', 'signed'])->name('verify');
+    Route::post("/verification-notification", "resendVerificationNotification")->middleware(['auth', 'throttle:6,1'])->name('send');
+});
+
+
 

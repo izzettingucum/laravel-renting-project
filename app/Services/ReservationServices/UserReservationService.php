@@ -1,19 +1,17 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\ReservationServices;
 
-use App\Http\DTO\OfficeDTO;
-use App\Http\DTO\UserReservationDTO;
+use App\DTO\OfficeDTO;
+use App\DTO\ReservationDTO;
 use App\Http\Requests\UserReservations\CreateRequest;
 use App\Http\Requests\UserReservations\IndexRequest;
 use App\Models\Office;
 use App\Models\Reservation;
 use App\Notifications\Reservations\NewHostReservation;
 use App\Notifications\Reservations\NewUserReservation;
-use App\Repositories\OfficesRepository;
-use App\Repositories\UserReservationsRepository;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Http\Response;
+use App\Repositories\OfficeRepositories\OfficesRepository;
+use App\Repositories\ReservationRepositories\UserReservationsRepository;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
@@ -22,28 +20,24 @@ use Illuminate\Validation\ValidationException;
 
 class UserReservationService
 {
-    protected $userReservationsRepository, $officesRepository, $userReservationDTO, $officeDTO;
+    protected $userReservationsRepository, $officesRepository, $reservationDTO, $officeDTO;
 
     public function __construct(
         UserReservationsRepository $userReservationsRepository,
-        OfficesRepository $officesRepository,
-        UserReservationDTO $userReservationDTO,
-        OfficeDTO $officeDTO
+        OfficesRepository          $officesRepository,
+        ReservationDTO             $reservationDTO,
+        OfficeDTO                  $officeDTO
     )
     {
         $this->userReservationsRepository = $userReservationsRepository;
         $this->officesRepository = $officesRepository;
-        $this->userReservationDTO = $userReservationDTO;
+        $this->reservationDTO = $reservationDTO;
         $this->officeDTO = $officeDTO;
     }
 
     public function index(IndexRequest $request)
     {
-        abort_unless(auth()->user()->tokenCan("reservations.show"),
-            Response::HTTP_FORBIDDEN
-        );
-
-        $userReservationDTO = new $this->userReservationDTO([
+        $reservationDTO = $this->reservationDTO->create([
             "userId" => auth()->id(),
             "officeId" => $request->office_id,
             "status" => $request->status,
@@ -52,27 +46,13 @@ class UserReservationService
             "perPage" => 20
         ]);
 
-        $reservations = $this->userReservationsRepository->getUserReservations($userReservationDTO);
+        $reservations = $this->userReservationsRepository->getUserReservations($reservationDTO);
 
         return $reservations;
     }
 
-    public function create(CreateRequest $request)
+    public function makeReservation(Office $office, CreateRequest $request)
     {
-
-        abort_unless(auth()->user()->tokenCan("reservations.make"),
-            Response::HTTP_FORBIDDEN
-        );
-
-        try {
-            $officeDTO = new $this->officeDTO(["id" => $request->office_id]);
-            $office = $this->officesRepository->findById($officeDTO);
-        } catch (ModelNotFoundException $e) {
-            throw ValidationException::withMessages([
-                "office_id" => "Invalid office_id"
-            ]);
-        }
-
         throw_if(
             $office->user_id == auth()->id(),
             ValidationException::withMessages(["office_id" => "you cannot make a reservation on your own office"])
@@ -104,7 +84,7 @@ class UserReservationService
                 $price = $price - ($price * $office->monthly_discount / 100);
             }
 
-            $userReservationDTO = new $this->userReservationDTO([
+            $reservationDTO = $this->reservationDTO->create([
                 "userId" => auth()->id(),
                 "officeId" => $office->id,
                 "price" => $price,
@@ -114,7 +94,7 @@ class UserReservationService
                 "endDate" => $request->end_date
             ]);
 
-            $reservation = $this->userReservationsRepository->store($userReservationDTO);
+            $reservation = $this->userReservationsRepository->store($reservationDTO);
 
             return $reservation;
         });
@@ -127,13 +107,9 @@ class UserReservationService
 
     public function cancel($id)
     {
-        abort_unless(auth()->user()->tokenCan("reservations.make"),
-            Response::HTTP_FORBIDDEN
-        );
+        $this->reservationDTO->setId($id);
 
-        $userReservationDTO = new $this->userReservationDTO(["id" => $id]);
-
-        $reservation = $this->userReservationsRepository->findById($userReservationDTO);
+        $reservation = $this->userReservationsRepository->findById($this->reservationDTO);
 
         throw_if(
             auth()->id() != $reservation->user_id ||
@@ -142,9 +118,9 @@ class UserReservationService
             ValidationException::withMessages(["reservation" => "you cannot cancel this reservation."])
         );
 
-        $userReservationDTO->status = Reservation::STATUS_CANCELLED;
+        $this->reservationDTO->setStatus(Reservation::STATUS_CANCELLED);
 
-        $reservation = $this->userReservationsRepository->updateStatus($userReservationDTO);
+        $reservation = $this->userReservationsRepository->updateStatus($this->reservationDTO);
 
         Notification::send(auth()->user(), new NewUserReservation($reservation));
         Notification::send($reservation->office->user, new NewHostReservation($reservation));

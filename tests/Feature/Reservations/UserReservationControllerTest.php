@@ -4,9 +4,11 @@ namespace Reservations;
 
 use App\Models\Office;
 use App\Models\Reservation;
+use App\Models\Role;
 use App\Models\User;
 use App\Notifications\Reservations\NewHostReservation;
 use App\Notifications\Reservations\NewUserReservation;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Notification;
@@ -23,7 +25,9 @@ class UserReservationControllerTest extends TestCase
     {
         $reservationCount = 2;
 
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $reservations = Reservation::factory()->for($user)->count($reservationCount)->create();
 
@@ -54,7 +58,9 @@ class UserReservationControllerTest extends TestCase
      */
     public function itListsReservationFilteredByDateRange()
     {
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $fromDate = "2023-03-03";
         $toDate = "2023-04-04";
@@ -114,7 +120,9 @@ class UserReservationControllerTest extends TestCase
      */
     public function itFiltersResultsByStatus()
     {
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $reservations = Reservation::factory()->for($user)->createMany([
             [
@@ -141,7 +149,9 @@ class UserReservationControllerTest extends TestCase
      */
     public function itFiltersResultsByOffice()
     {
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $office = Office::factory()->create();
 
@@ -164,7 +174,9 @@ class UserReservationControllerTest extends TestCase
      */
     public function itMakesReservations()
     {
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $office = Office::factory()->create([
             "price_per_day" => 10,
@@ -190,7 +202,9 @@ class UserReservationControllerTest extends TestCase
      */
     public function itCannotMakeReservationOnNonExistingOffice()
     {
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $this->actingAs($user);
 
@@ -209,7 +223,9 @@ class UserReservationControllerTest extends TestCase
      */
     public function itCannotMakeReservationOnOfficeThatBelongsToTheUser()
     {
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $office = Office::factory()->for($user)->create();
 
@@ -230,7 +246,9 @@ class UserReservationControllerTest extends TestCase
      */
     public function itCannotMakeReservationLessThanTwoDays()
     {
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $office = Office::factory()->create();
 
@@ -251,7 +269,9 @@ class UserReservationControllerTest extends TestCase
      */
     public function itCannotMakeReservationThatIsConflicting()
     {
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $office = Office::factory()->create();
 
@@ -278,7 +298,9 @@ class UserReservationControllerTest extends TestCase
      */
     public function itCannotMakeReservationsOnPendingOffices()
     {
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $office = Office::factory()->create([
             "approval_status" => Office::APPROVAL_PENDING
@@ -301,7 +323,9 @@ class UserReservationControllerTest extends TestCase
      */
     public function itCannotMakeReservationOnSameDay()
     {
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $office = Office::factory()->create();
 
@@ -324,11 +348,13 @@ class UserReservationControllerTest extends TestCase
     {
         Notification::fake();
 
-        $host = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $host = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $office = Office::factory()->for($host)->create();
 
-        $user = User::factory()->create();
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $this->actingAs($user);
 
@@ -349,8 +375,10 @@ class UserReservationControllerTest extends TestCase
      */
     public function itDoesntCancelTheReservationBelongsToAnotherUser()
     {
-        $user1 = User::factory()->create();
-        $user2 = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user1 = User::factory()->withRole(ROLE::ROLE_USER)->create();
+        $user2 = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $reservation = Reservation::factory()->for($user1)->create([
             "start_date" => now()->addDay(2),
@@ -372,8 +400,10 @@ class UserReservationControllerTest extends TestCase
     {
         Notification::fake();
 
-        $host = User::factory()->create();
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $host = User::factory()->withRole(ROLE::ROLE_USER)->create();
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $office = Office::factory()->for($host)->create();
 
@@ -395,7 +425,9 @@ class UserReservationControllerTest extends TestCase
      */
     public function itDoesntCancelTheReservationAlreadyStarted()
     {
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $reservation = Reservation::factory()->for($user)->create([
             "start_date" => now()->subDay(1)
@@ -414,7 +446,9 @@ class UserReservationControllerTest extends TestCase
      */
     public function itDoesntCancelTheCancelledReservations()
     {
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $reservation = Reservation::factory()->for($user)->create([
             "status" => Reservation::STATUS_CANCELLED

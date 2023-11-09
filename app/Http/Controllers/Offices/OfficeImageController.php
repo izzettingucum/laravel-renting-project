@@ -7,7 +7,7 @@ use App\Http\Requests\OfficeImageRequest;
 use App\Http\Resources\ImageResource;
 use App\Models\Image;
 use App\Models\Office;
-use App\Services\OfficeImageService;
+use App\Services\OfficeServices\OfficeImageService;
 
 class OfficeImageController extends Controller
 {

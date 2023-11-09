@@ -4,9 +4,12 @@ namespace Offices;
 
 use App\Models\Office;
 use App\Models\Reservation;
+use App\Models\Role;
 use App\Models\Tag;
 use App\Models\User;
-use App\Notifications\Offices\OfficePendingApproval;
+use App\Notifications\Offices\OfficeCreatedNotification;
+use App\Notifications\Offices\OfficeUpdatedNotification;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\Response;
@@ -62,7 +65,9 @@ class OfficeControllerTest extends TestCase
         $office = Office::factory($officeCount)->hasAttached($tags)->create();
         Office::factory()->hasAttached($tags->first());
 
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $this->actingAs($user);
 
@@ -82,7 +87,9 @@ class OfficeControllerTest extends TestCase
      */
     public function itListsOfficesIncludingHiddenAndUnapprovedIfFilteringForTheCurrentLoggedInUser()
     {
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $office1 = Office::factory()->for($user)->create([
             "approval_status" => Office::APPROVAL_APPROVED,
@@ -218,8 +225,10 @@ class OfficeControllerTest extends TestCase
     {
         Notification::fake();
 
-        $admin = User::factory()->create(["is_admin" => true]);
-        $user = User::factory()->createQuietly();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
+        $admin = User::factory()->withRole(Role::ROLE_ADMIN)->create();
 
         $tag = Tag::factory()->create();
         $tag2 = Tag::factory()->create();
@@ -247,7 +256,7 @@ class OfficeControllerTest extends TestCase
             "title" => "Deneme Başlığı"
         ]);
 
-        Notification::assertSentTo($admin, OfficePendingApproval::class);
+        Notification::assertSentTo($admin, OfficeCreatedNotification::class);
     }
 
     /**
@@ -256,7 +265,9 @@ class OfficeControllerTest extends TestCase
 
     public function itUpdatesAnOffice()
     {
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $tags = Tag::factory(2)->create();
         $anotherTag = Tag::factory()->create();
@@ -284,8 +295,11 @@ class OfficeControllerTest extends TestCase
      */
     public function itDoesntUpdateOfficeThatDoesntBelongsToUser()
     {
-        $user = User::factory()->create();
-        $anotherUser = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
+
+        $anotherUser = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $office = Office::factory()->for($user)->create();
 
@@ -307,7 +321,10 @@ class OfficeControllerTest extends TestCase
 
         $admin = User::factory()->create(["is_admin" => true]);
 
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
+
         $office = Office::factory()->for($user)->create();
 
         $this->actingAs($user);
@@ -321,7 +338,7 @@ class OfficeControllerTest extends TestCase
             "approval_status" => Office::APPROVAL_PENDING
         ]);
 
-        Notification::assertSentTo($admin, OfficePendingApproval::class);
+        Notification::assertSentTo($admin, OfficeUpdatedNotification::class);
     }
 
     /**
@@ -331,7 +348,10 @@ class OfficeControllerTest extends TestCase
     {
         Storage::put("office_image.jpg", "empty");
 
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
+
         $office = Office::factory()->for($user)->create();
 
         $image = $office->images()->create([
@@ -357,7 +377,10 @@ class OfficeControllerTest extends TestCase
 
     public function itCannotDeleteAnOfficeThatHasReservations()
     {
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
+
         $office = Office::factory()->for($user)->create();
 
         Reservation::factory()->for($office)->create(["status" => Reservation::STATUS_ACTIVE]);
@@ -377,7 +400,10 @@ class OfficeControllerTest extends TestCase
      */
     public function itUpdatetedTheFeatureImageOfAnOffice()
     {
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
+
         $office = Office::factory()->for($user)->create();
 
         $image = $office->images()->create([
@@ -400,7 +426,10 @@ class OfficeControllerTest extends TestCase
 
     public function itDoesntUpdateFeaturedImageThatBelongsToAnotherOffice()
     {
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
+
         $office = Office::factory()->for($user)->create();
         $office2 = Office::factory()->create();
 

@@ -1,13 +1,12 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\OfficeServices;
 
-use App\Http\DTO\OfficeImageDTO;
+use App\DTO\OfficeImageDTO;
 use App\Models\Image;
 use App\Models\Office;
-use App\Repositories\OfficeImagesRepository;
+use App\Repositories\OfficeRepositories\OfficeImagesRepository;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -25,32 +24,22 @@ class OfficeImageService
 
     public function store(Office $office, $request)
     {
-        abort_unless(auth()->user()->tokenCan("office.update"),
-            Response::HTTP_FORBIDDEN
-        );
-
         $this->authorize("update", $office);
-
-        $request->validated();
 
         $path = $request->file("image")->storePublicly("/");
 
-        $officeImageDTO = new $this->officeImageDTO([
+        $officeImageDTO = $this->officeImageDTO->create([
             "office_id" => $office->id,
             "path" => $path
         ]);
 
-        $image = $this->officeImagesRepository->create($officeImageDTO);
+        $image = $this->officeImagesRepository->create($office, $officeImageDTO);
 
         return $image;
     }
 
     public function delete(Office $office, Image $image)
     {
-        abort_unless(auth()->user()->tokenCan("office.update"),
-            Response::HTTP_FORBIDDEN
-        );
-
         $this->authorize("delete", $office);
 
         throw_if(
@@ -65,7 +54,7 @@ class OfficeImageService
 
         Storage::delete($image->path);
 
-        $officeImageDTO = new $this->officeImageDTO([
+        $officeImageDTO = $this->officeImageDTO->create([
             "id" => $image->id
         ]);
 

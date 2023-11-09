@@ -2,6 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Models\Permission;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -37,4 +40,23 @@ class UserFactory extends Factory
             ];
         });
     }
+
+    public function withRole($role)
+    {
+        return $this->afterCreating(function (User $user) use ($role) {
+            if (! Role::where("role", $role)->exists()) {
+                $role = Role::create(["role" => $role]);
+                $permissions = Permission::factory()->create();
+                $role->permissions()->attach($permissions);
+            }
+            else {
+                $role = Role::where("role", $role)->first();
+            }
+
+            $user->userRole()->create([
+                "role_id" => $role->id
+            ]);
+        });
+    }
+
 }

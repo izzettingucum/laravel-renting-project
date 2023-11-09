@@ -3,7 +3,9 @@
 namespace Offices;
 
 use App\Models\Office;
+use App\Models\Role;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\Response;
@@ -22,7 +24,9 @@ class OfficeImageControllerTest extends TestCase
     {
         Storage::fake();
 
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
         $office = Office::factory()->for($user)->create();
 
         $this->actingAs($user);
@@ -49,7 +53,9 @@ class OfficeImageControllerTest extends TestCase
     {
         Storage::put("office_image.jpg", "empty");
 
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
         $office = Office::factory()->for($user)->create();
 
         $image1 = $office->images()->create([
@@ -76,7 +82,10 @@ class OfficeImageControllerTest extends TestCase
      */
      public function itDoesntDeleteTheOnlyImage()
      {
-         $user = User::factory()->create();
+         $this->seed(RolePermissionSeeder::class);
+
+         $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
+
          $office = Office::factory()->for($user)->create();
 
          $image = $office->images()->create([
@@ -96,7 +105,10 @@ class OfficeImageControllerTest extends TestCase
      */
     public function itDoesntDeleteTheFeaturedImage()
     {
-        $user = User::factory()->create();
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
+
         $office = Office::factory()->for($user)->create();
 
         $image1 = $office->images()->create([
@@ -122,7 +134,9 @@ class OfficeImageControllerTest extends TestCase
      */
      public function itDoesntDeleteTheImageThatBelongsToAnotherResource()
      {
-         $user = User::factory()->create();
+         $this->seed(RolePermissionSeeder::class);
+
+         $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
          $office = Office::factory()->for($user)->create();
          $office2 = Office::factory()->for($user)->create();

@@ -1,12 +1,13 @@
 <?php
 
-namespace App\Repositories;
+namespace App\Repositories\OfficeRepositories;
 
-use App\Http\DTO\OfficeDTO;
+use App\DTO\OfficeDTO;
 use App\Models\Office;
 use App\Models\Reservation;
 use App\Repositories\Interfaces\OfficesInterface;
-use Illuminate\Support\Arr;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
 
 class OfficesRepository implements OfficesInterface
 {
@@ -58,17 +59,22 @@ class OfficesRepository implements OfficesInterface
 
     public function findById(OfficeDTO $officeDTO)
     {
-        $office = $this->officeModel->findOrFail($officeDTO->id)
-            ->withCount(["reservations" => function ($query) {
-                return $query->where("status", "=", Reservation::STATUS_ACTIVE);
-            }])
-            ->with(["images", "tags", "user"])
-            ->first();
-
+        try {
+            $office = $this->officeModel->findOrFail($officeDTO->id)
+                ->withCount(["reservations" => function ($query) {
+                    return $query->where("status", "=", Reservation::STATUS_ACTIVE);
+                }])
+                ->with(["images", "tags", "user"])
+                ->first();
+        } catch (ModelNotFoundException $e) {
+            throw ValidationException::withMessages([
+                "office_id" => "Invalid office_id"
+            ]);
+        }
         return $office;
     }
 
-    public function create(OfficeDTO $officeDTO)
+    public function createOffice(OfficeDTO $officeDTO)
     {
         $office = $this->officeModel->create([
             "title" => $officeDTO->title,

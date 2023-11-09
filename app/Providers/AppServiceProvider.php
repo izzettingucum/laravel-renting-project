@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
-use App\Http\DTO\HostReservationDTO;
-use App\Http\DTO\OfficeDTO;
-use App\Http\DTO\OfficeImageDTO;
-use App\Http\DTO\UserReservationDTO;
+use App\DTO\Auth\UserDTO;
+use App\DTO\Auth\VerificationDTO;
+use App\DTO\HostReservationDTO;
+use App\DTO\OfficeDTO;
+use App\DTO\OfficeImageDTO;
+use App\DTO\ReservationDTO;
 use App\Models\Office;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -30,12 +32,20 @@ class AppServiceProvider extends ServiceProvider
             return new OfficeImageDTO([]);
         });
 
-        $this->app->bind(UserReservationDTO::class, function ($app) {
-            return new UserReservationDTO([]);
+        $this->app->bind(ReservationDTO::class, function ($app) {
+            return new ReservationDTO([]);
         });
 
         $this->app->bind(HostReservationDTO::class, function ($app) {
             return new HostReservationDTO([]);
+        });
+
+        $this->app->bind(UserDTO::class, function ($app) {
+            return new UserDTO([]);
+        });
+
+        $this->app->bind(VerificationDTO::class, function ($app) {
+            return new VerificationDTO([]);
         });
     }
 

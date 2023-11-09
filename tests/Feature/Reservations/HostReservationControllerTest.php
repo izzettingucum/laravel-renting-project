@@ -3,7 +3,9 @@
 namespace Reservations;
 
 use App\Models\Office;
+use App\Models\Permission;
 use App\Models\Reservation;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -11,7 +13,7 @@ use Tests\TestCase;
 
 class HostReservationControllerTest extends TestCase
 {
-    Use LazilyRefreshDatabase, WithFaker;
+    Use WithFaker, LazilyRefreshDatabase;
 
      /**
      * @test
@@ -20,7 +22,7 @@ class HostReservationControllerTest extends TestCase
     {
         $reservationCount = 1;
 
-        $host = User::factory()->create();
+        $host = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
         $user = User::factory()->create();
 
@@ -44,7 +46,7 @@ class HostReservationControllerTest extends TestCase
      */
      public function itListsReservationsFilteredByOfficeId()
      {
-         $host = User::factory()->create();
+         $host = User::factory()->withRole(ROLE::ROLE_USER)->create();
          $user = User::factory()->create();
 
          $office1 = Office::factory()->for($host)->create();
@@ -70,7 +72,7 @@ class HostReservationControllerTest extends TestCase
       {
           $reservationCount = 2;
 
-          $host = User::factory()->create();
+          $host = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
           $user1 = User::factory()->create();
           $user2 = User::factory()->create();
@@ -95,7 +97,7 @@ class HostReservationControllerTest extends TestCase
        */
        public function itListsReservationsFilteredByStatus()
        {
-           $host = User::factory()->create();
+           $host = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
            $user = User::factory()->create();
 
@@ -127,7 +129,7 @@ class HostReservationControllerTest extends TestCase
      public function itListsReservationFilteredByDateRange()
      {
          $user = User::factory()->create();
-         $host = User::factory()->create();
+         $host = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
          $office = Office::factory()->for($host)->create();
 

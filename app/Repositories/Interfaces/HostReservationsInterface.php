@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Interfaces;
 
-use App\Http\DTO\HostReservationDTO;
+use App\DTO\ReservationDTO;
 
 interface HostReservationsInterface
 {
-    public function getHostReservations(HostReservationDTO $hostReservationDTO);
+    public function getHostReservations(ReservationDTO $reservationDTO);
 }

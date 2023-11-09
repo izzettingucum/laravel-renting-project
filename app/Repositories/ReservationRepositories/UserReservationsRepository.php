@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Repositories;
+namespace App\Repositories\ReservationRepositories;
 
-use App\Http\DTO\OfficeImageDTO;
-use App\Http\DTO\UserReservationDTO;
+use App\DTO\ReservationDTO;
 use App\Models\Reservation;
 use App\Repositories\Interfaces\UserReservationsInterface;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
 
 class UserReservationsRepository implements UserReservationsInterface
 {
@@ -17,7 +17,7 @@ class UserReservationsRepository implements UserReservationsInterface
         $this->reservationModel = $reservationModel;
     }
 
-    public function getUserReservations(UserReservationDTO $userReservationDTO)
+    public function getUserReservations(ReservationDTO $userReservationDTO)
     {
         $query = $this->reservationModel->query()->whereUserId($userReservationDTO->userId);
 
@@ -45,14 +45,20 @@ class UserReservationsRepository implements UserReservationsInterface
             });
     }
 
-    public function findById(UserReservationDTO $userReservationDTO)
+    public function findById(ReservationDTO $userReservationDTO)
     {
-        $reservation = $this->reservationModel->findOrFail($userReservationDTO->id);
-
+        try {
+            $reservation = $this->reservationModel->findOrFail($userReservationDTO->id);
+        }
+        catch (ModelNotFoundException $e) {
+            throw ValidationException::withMessages([
+                "reservation_id" => "Invalid reservation_id"
+            ]);
+        }
         return $reservation->load("office");
     }
 
-    public function store(UserReservationDTO $userReservationDTO)
+    public function store(ReservationDTO $userReservationDTO)
     {
         $reservation = $this->reservationModel->create([
             "user_id" => $userReservationDTO->userId,
@@ -67,7 +73,7 @@ class UserReservationsRepository implements UserReservationsInterface
         return $reservation->load("office");
     }
 
-    public function updateStatus(UserReservationDTO $userReservationDTO)
+    public function updateStatus(ReservationDTO $userReservationDTO)
     {
         $reservation = $this->reservationModel->findOrFail($userReservationDTO->id);
 

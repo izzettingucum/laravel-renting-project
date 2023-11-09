@@ -2,11 +2,12 @@
 
 namespace App\Repositories\Interfaces;
 
-use App\Http\DTO\OfficeImageDTO;
+use App\DTO\OfficeImageDTO;
+use App\Models\Office;
 
 interface OfficeImagesInterface
 {
-    public function create(OfficeImageDTO $officeImageDTO);
+    public function create(Office $office, OfficeImageDTO $officeImageDTO);
 
     public function delete(OfficeImageDTO $officeImageDTO);
 }
