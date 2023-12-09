@@ -18,10 +18,10 @@ class LogoutService
         $token = auth()->user()->currentAccessToken();
 
         if (! $token) {
-            $this->message = "Başarıyla çıkış yaptınız";
+            $this->message = "Your logout proccess completed successfully";
         }
         else {
-            $this->message = "Çıkış işlemi başarısız";
+            $this->message = "Your logout proccess couldn't complete successfully";
         }
 
         return $this->message;
