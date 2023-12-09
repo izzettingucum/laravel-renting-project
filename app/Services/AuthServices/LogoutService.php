@@ -3,30 +3,27 @@
 namespace App\Services\AuthServices;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
 class LogoutService
 {
+    private $message;
+
     public function logout(Request $request)
     {
-        try {
-            if (EnsureFrontendRequestsAreStateful::fromFrontend($request)) {
-                Auth::guard('web')->logout();
+        $request->user()->currentAccessToken()->delete();
+    }
 
-                request()->session()->invalidate();
+    public function setLogoutMessage()
+    {
+        $token = auth()->user()->currentAccessToken();
 
-                request()->session()->regenerateToken();
-            }
-            else {
-                $request->user()->currentAccessToken()->delete();
-            }
-
-            return ['message' => 'Başarıyla çıkış yaptınız.'];
+        if (! $token) {
+            $this->message = "Başarıyla çıkış yaptınız";
         }
-        catch (\Exception $e) {
-            return ["message" => "Çıkış yaparken bir hata oluştu : " . $e->getMessage()];
+        else {
+            $this->message = "Çıkış işlemi başarısız";
         }
 
+        return $this->message;
     }
 }

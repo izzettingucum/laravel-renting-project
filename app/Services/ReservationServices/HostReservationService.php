@@ -3,7 +3,11 @@
 namespace App\Services\ReservationServices;
 
 use App\DTO\ReservationDTO;
+use App\Models\Reservation;
+use App\Models\User;
+use App\Notifications\Reservations\NewHostReservation;
 use App\Repositories\ReservationRepositories\HostReservationsRepository;
+use Illuminate\Support\Facades\Notification;
 
 class HostReservationService
 {
@@ -16,7 +20,7 @@ class HostReservationService
         $this->reservationDTO = $reservationDTO;
     }
 
-    public function index($request)
+    public function getHostReservations($request)
     {
         $reservationDTO = $this->reservationDTO->create([
             "officeId" => $request->office_id,
@@ -30,5 +34,10 @@ class HostReservationService
         $reservations = $this->hostReservationsRepository->getHostReservations($reservationDTO);
 
         return $reservations;
+    }
+
+    public function sendNewHostReservationNotification(User $user, Reservation $reservation)
+    {
+        Notification::send($user, new NewHostReservation($reservation));
     }
 }

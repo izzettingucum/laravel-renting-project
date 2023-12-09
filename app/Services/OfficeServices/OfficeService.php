@@ -30,7 +30,7 @@ class OfficeService
         $this->userRepository = $userRepository;
     }
 
-    public function index(OfficeListRequest $request)
+    public function getOffices(OfficeListRequest $request)
     {
         $officeDTO = $this->officeDTO->create([
             "userId" => $request->user_id,
@@ -46,9 +46,11 @@ class OfficeService
         return $offices;
     }
 
-    public function show($id)
+    public function findOfficeById($id)
     {
-        $office = $this->findOfficeById($id);
+        $this->officeDTO->setId($id);
+
+        $office = $this->officesRepository->findById($this->officeDTO);
 
         return $office;
     }
@@ -71,8 +73,6 @@ class OfficeService
 
             return $office;
         });
-
-        event(new OfficeCreated($office));
 
         return $office;
     }
@@ -127,12 +127,8 @@ class OfficeService
         $this->officesRepository->delete($this->officeDTO);
     }
 
-    public function findOfficeById($id)
+    public function triggerOfficeCreatedEvent(Office $office)
     {
-        $this->officeDTO->setId($id);
-
-        $office = $this->officesRepository->findById($this->officeDTO);
-
-        return $office;
+        event(new OfficeCreated($office));
     }
 }

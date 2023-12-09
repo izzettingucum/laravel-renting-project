@@ -35,7 +35,7 @@ class ReservationIndexRequest extends FormRequest
         ];
     }
 
-    public function validated()
+    public function validated(): array
     {
         $validator = Validator::make($this->all(), $this->rules());
 

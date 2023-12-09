@@ -32,7 +32,7 @@ class HostReservationControllerTest extends TestCase
 
         $this->actingAs($host);
 
-        $response = $this->getJson('api/host/reservations');
+        $response = $this->getJson(route("host.reservations.list"));
 
         $response->assertOk()
             ->assertJsonPath("data.0.id", $reservation->id)
@@ -57,7 +57,7 @@ class HostReservationControllerTest extends TestCase
 
          $this->actingAs($host);
 
-         $response = $this->getJson("api/host/reservations?" . http_build_query([
+         $response = $this->getJson(route("host.reservations.list") . "?" . http_build_query([
              "office_id" => $office1->id
          ]));
 
@@ -84,7 +84,7 @@ class HostReservationControllerTest extends TestCase
           [$reservation1] = Reservation::factory($reservationCount)->for($user1)->for($office)->create();
           $reservation2 = Reservation::factory()->for($user2)->for($office)->create();
 
-          $response = $this->getJson("api/host/reservations?" . http_build_query([
+          $response = $this->getJson(route("host.reservations.list") . "?" . http_build_query([
               "user_id" => $user1->id
           ]));
 
@@ -113,7 +113,7 @@ class HostReservationControllerTest extends TestCase
 
            $this->actingAs($host);
 
-           $response = $this->getJson("api/host/reservations?" . http_build_query([
+           $response = $this->getJson(route("host.reservations.list") . "?" . http_build_query([
                "status" => Reservation::STATUS_ACTIVE
            ]));
 
@@ -171,7 +171,7 @@ class HostReservationControllerTest extends TestCase
              "end_date" => "2023-05-01"
          ]);
 
-         $response = $this->getJson("api/host/reservations?" . http_build_query([
+         $response = $this->getJson(route("host.reservations.list") . "?" . http_build_query([
                  "from_date" => $fromDate,
                  "to_date" => $toDate
              ]));

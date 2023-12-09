@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Repositories;
+namespace App\Repositories\AuthRepositories;
 
 use App\DTO\Auth\VerificationDTO;
 use App\Models\User;
 use App\Models\UserVerificationMail;
+use App\Repositories\Interfaces;
 
 class VerificationRepository implements Interfaces\VerificationInterface
 {

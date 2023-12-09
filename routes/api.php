@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\Offices\OfficeController;
 use App\Http\Controllers\Offices\OfficeImageController;
@@ -23,28 +25,30 @@ use Illuminate\Support\Facades\Route;
 */
 
 
-// Auth...
-Route::group(["prefix" => "auth"], function ()
-{
+// AuthProcess...
+Route::group(["prefix" => "auth"], function () {
     Route::group(["middleware" => ["guest"]], function () {
         Route::post("/register", [RegisterController::class, "register"])->name("register");
         Route::post("/login", [LoginController::class, "login"])->name("login");
+        Route::post("/login/twoFactor", [LoginController::class, "loginWithTwoFactor"])->name("login.twoFactor");
+        Route::group(["prefix" => "password"], function () {
+            Route::post("/reset", [ResetPasswordController::class, "resetPassword"])->name("reset.password");
+            Route::post("/forgot", [ForgotPasswordController::class, "sendRecoveryCode"])->name("send.recovery.code");
+            Route::post("/forgot/check/code", [ForgotPasswordController::class, "checkRecoveryCode"])->name("check.recovery.code");
+            Route::post("/forgot/reset", [ForgotPasswordController::class, "resetPassword"])->name("forgot.reset.password");
+        });
     });
 
     Route::group(["middleware" => ["auth"]], function () {
-        Route::post("/logout", [LogoutController::class, "logout"]);
+        Route::post("/reset/password", [ResetPasswordController::class, "resetPassword"])->name("reset.password");
+        Route::post("/logout", [LogoutController::class, "logout"])->name("logout");
     });
-});
-
-// Tags...
-Route::group(["prefix" => "tags", "controller" => TagController::class, "as" => "tags."], function () {
-    Route::get("/", TagController::class)->name("list");
 });
 
 // Offices...
 Route::group(["prefix" => "offices", "controller" => OfficeController::class, "as" => "offices."], function () {
     Route::get('/', "index")->name("list");
-    Route::get('/{id}',  "show")->name("show");
+    Route::get('/{id}', "show")->name("show");
     Route::group(["middleware" => ["auth:sanctum", "verified", "authorize"]], function () {
         Route::post('/', "create")->name("create");
         Route::patch('/{id}', "update")->name("update");
@@ -53,7 +57,7 @@ Route::group(["prefix" => "offices", "controller" => OfficeController::class, "a
 });
 
 // Office Photos...
-Route::group(["prefix" => "offices/{office}/images", "controller" => OfficeImageController::class, "as" =>"offices.images."], function () {
+Route::group(["prefix" => "offices/{office}/images", "controller" => OfficeImageController::class, "as" => "offices.images."], function () {
     Route::group(["middleware" => ["auth:sanctum", "verified", "authorize"]], function () {
         Route::post("", "store")->name("create");
         Route::delete("/{image:id}", "delete")->name("delete");

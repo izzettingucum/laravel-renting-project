@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -42,8 +41,7 @@ class User extends Authenticatable implements MustVerifyEmail
      * @var array<string, string>
      */
     protected $casts = [
-        'email_verified_at' => 'datetime',
-        "is_admin" => "boolean"
+        'email_verified_at' => 'datetime'
     ];
 
     public function offices() : HasMany
@@ -59,5 +57,15 @@ class User extends Authenticatable implements MustVerifyEmail
     public function userRole(): HasOne
     {
         return $this->hasOne(UserRole::class);
+    }
+
+    public function twoFactorCode(): HasMany
+    {
+        return $this->hasMany(TwoFactorCode::class);
+    }
+
+    public function forgotPasswordMail(): HasMany
+    {
+        return $this->hasMany(ForgotPasswordMail::class);
     }
 }

@@ -2,11 +2,12 @@
 
 namespace App\Services;
 
+use App\DTO\Auth\RoleDTO;
 use App\DTO\Auth\UserDTO;
-use App\DTO\RoleDTO;
 use App\Models\User;
+use App\Repositories\AuthRepositories\RoleRepository;
 use App\Repositories\UserRepository;
-use App\Repositories\RoleRepository;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class UserService
@@ -19,6 +20,19 @@ class UserService
         $this->userDTO = $userDTO;
         $this->roleRepository = $roleRepository;
         $this->roleDTO = $roleDTO;
+    }
+
+    public function createUser($attributes)
+    {
+        $userDTO = $this->userDTO->create([
+            "name" => $attributes->name,
+            "email" => $attributes->email,
+            "password" => Hash::make($attributes->password)
+        ]);
+
+        $user = $this->userRepository->create($userDTO);
+
+        return $user;
     }
 
     public function createRoleForUser(User $user, $role)
@@ -37,17 +51,28 @@ class UserService
         $this->userRepository->createUserRole($this->userDTO);
     }
 
-    public function createTokenForUser(User $user): User
+    public function getUserByEmail($email)
     {
-        throw_if(
-            ! $user->userRole()->exists(),
-            ValidationException::withMessages(["user doesnt have a role"])
-        );
+        $this->userDTO->setEmail($email);
 
-        $permissions = $user->userRole->role->permissions;
-
-        $user["token"] = $user->createToken("api_token", $permissions->pluck("name")->toArray())->plainTextToken;
+        $user = $this->userRepository->findByEmail($this->userDTO);
 
         return $user;
+    }
+
+    public function controlUserPassword($password, $userPassword)
+    {
+        throw_if(
+            ! Hash::check($password, $userPassword),
+            ValidationException::withMessages(["your current password is invalid."])
+        );
+    }
+
+    public function validateUser($user)
+    {
+        throw_if(
+            ! $user,
+            ValidationException::withMessages(["message" => "invalid user."])
+        );
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Repositories\Interfaces;
 
-use App\DTO\RoleDTO;
+use App\DTO\Auth\RoleDTO;
 
 interface RoleInterface
 {

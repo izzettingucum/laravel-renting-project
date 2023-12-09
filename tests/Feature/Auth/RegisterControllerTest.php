@@ -24,14 +24,14 @@ class RegisterControllerTest extends TestCase
 
         $this->seed(RolePermissionSeeder::class);
 
-        $response = $this->postJson('/api/auth/register', [
+        $response = $this->postJson(route("register"), [
             "name" => $this->faker->name,
-            "email" => "izzettin_43@hotmail.com",
+            "email" => "example@hotmail.com",
             "password" => "123456",
             "password_confirmation" => "123456"
         ]);
 
-        $user = User::where("email", "izzettin_43@hotmail.com")->first();
+        $user = User::where("email", "example@hotmail.com")->first();
 
         Notification::assertSentTo($user, VerifyEmail::class);
 
@@ -48,14 +48,14 @@ class RegisterControllerTest extends TestCase
         $token = $user->createToken('test-token')->plainTextToken;
 
         $response = $this->withHeader('Authorization', "Bearer $token")
-            ->postJson('/api/auth/register', [
+            ->postJson(route("register"), [
                 "name" => $this->faker->name,
                 "email" => "izzettin_43@hotmail.com",
                 "password" => "123456",
                 "password_confirmation" => "123456"
             ]);
 
-        $response->assertStatus(Response::HTTP_FOUND);
+        $response->assertStatus(Response::HTTP_UNAUTHORIZED);
     }
 
     /**
@@ -67,9 +67,9 @@ class RegisterControllerTest extends TestCase
             "email" => "deneme@gmail.com"
         ]);
 
-        $response = $this->postJson('/api/auth/register', [
+        $response = $this->postJson(route("register"), [
             "name" => $this->faker->name,
-            "email" => "deneme@gmail.com",
+            "email" => $user->email,
             "password" => "123456",
             "password_confirmation" => "123456"
         ]);

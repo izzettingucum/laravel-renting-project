@@ -8,6 +8,7 @@ use App\Http\Requests\UserReservations\CreateRequest;
 use App\Http\Requests\UserReservations\IndexRequest;
 use App\Models\Office;
 use App\Models\Reservation;
+use App\Models\User;
 use App\Notifications\Reservations\NewHostReservation;
 use App\Notifications\Reservations\NewUserReservation;
 use App\Repositories\OfficeRepositories\OfficesRepository;
@@ -35,7 +36,7 @@ class UserReservationService
         $this->officeDTO = $officeDTO;
     }
 
-    public function index(IndexRequest $request)
+    public function getUserReservations(IndexRequest $request)
     {
         $reservationDTO = $this->reservationDTO->create([
             "userId" => auth()->id(),
@@ -99,9 +100,6 @@ class UserReservationService
             return $reservation;
         });
 
-        Notification::send(auth()->user(), new NewUserReservation($reservation));
-        Notification::send($office->user, new NewHostReservation($reservation));
-
         return $reservation;
     }
 
@@ -122,9 +120,11 @@ class UserReservationService
 
         $reservation = $this->userReservationsRepository->updateStatus($this->reservationDTO);
 
-        Notification::send(auth()->user(), new NewUserReservation($reservation));
-        Notification::send($reservation->office->user, new NewHostReservation($reservation));
-
         return $reservation;
+    }
+
+    public function sendNewUserReservationNotification(User $user, Reservation $reservation)
+    {
+        Notification::send($user, new NewUserReservation($reservation));
     }
 }

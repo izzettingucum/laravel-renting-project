@@ -20,11 +20,7 @@ class AuthorizeUser
      */
     public function handle(Request $request, Closure $next)
     {
-        $user = $request->user();
-
-        if (! $user || ! $user->currentAccessToken()) {
-            throw new AuthenticationException;
-        }
+        $user = auth()->user();
 
         $userRole = $user->userRole;
 

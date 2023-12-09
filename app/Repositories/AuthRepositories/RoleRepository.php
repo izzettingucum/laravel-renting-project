@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Repositories;
+namespace App\Repositories\AuthRepositories;
 
-use App\DTO\RoleDTO;
+use App\DTO\Auth\RoleDTO;
 use App\Models\Role;
+use App\Repositories\Interfaces;
 
 class RoleRepository implements Interfaces\RoleInterface
 {

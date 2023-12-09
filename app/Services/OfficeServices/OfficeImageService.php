@@ -24,8 +24,6 @@ class OfficeImageService
 
     public function store(Office $office, $request)
     {
-        $this->authorize("update", $office);
-
         $path = $request->file("image")->storePublicly("/");
 
         $officeImageDTO = $this->officeImageDTO->create([
@@ -40,8 +38,6 @@ class OfficeImageService
 
     public function delete(Office $office, Image $image)
     {
-        $this->authorize("delete", $office);
-
         throw_if(
             $office->images()->count() == 1,
             ValidationException::withMessages(["error" => "Cannot delete the only image."])

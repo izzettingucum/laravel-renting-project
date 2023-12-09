@@ -8,6 +8,7 @@ use App\Http\Resources\ImageResource;
 use App\Models\Image;
 use App\Models\Office;
 use App\Services\OfficeServices\OfficeImageService;
+use Illuminate\Http\Response;
 
 class OfficeImageController extends Controller
 {
@@ -20,6 +21,8 @@ class OfficeImageController extends Controller
 
     public function store(Office $office, OfficeImageRequest $request)
     {
+        $this->authorize("update", $office);
+
         $image = $this->officeImageService->store($office, $request);
 
         return ImageResource::make(
@@ -29,6 +32,12 @@ class OfficeImageController extends Controller
 
     public function delete(Office $office, Image $image)
     {
+        $this->authorize("delete", $office);
+
         $this->officeImageService->delete($office, $image);
+
+        return response()->json([
+            "message" => "Image deleted successfully"
+        ], Response::HTTP_OK);
     }
 }

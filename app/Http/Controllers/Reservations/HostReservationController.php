@@ -19,7 +19,7 @@ class HostReservationController extends Controller
 
     public function index(ReservationIndexRequest $request): AnonymousResourceCollection
     {
-        $reservations = $this->hostReservationService->index($request);
+        $reservations = $this->hostReservationService->getHostReservations($request);
 
         return ReservationResource::collection(
             $reservations

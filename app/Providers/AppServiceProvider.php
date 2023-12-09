@@ -36,10 +36,6 @@ class AppServiceProvider extends ServiceProvider
             return new ReservationDTO([]);
         });
 
-        $this->app->bind(HostReservationDTO::class, function ($app) {
-            return new HostReservationDTO([]);
-        });
-
         $this->app->bind(UserDTO::class, function ($app) {
             return new UserDTO([]);
         });

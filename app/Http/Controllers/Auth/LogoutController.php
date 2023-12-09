@@ -17,8 +17,10 @@ class LogoutController extends Controller
 
     public function logout(Request $request)
     {
-        $logout = $this->logoutService->logout($request);
+        $this->logoutService->logout($request);
 
-        return response()->json(["message" => $logout["message"]]);
+        return response()->json([
+            "message" => $this->logoutService->setLogoutMessage()
+        ]);
     }
 }

@@ -8,12 +8,15 @@ use App\Http\Resources\UserResource;
 use App\Models\Role;
 use App\Services\AuthServices\RegisterService;
 use App\Services\UserService;
+use App\Traits\AuthProcess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 
 
 class RegisterController extends Controller
 {
+    use AuthProcess;
+
     protected $registerService, $userService;
 
     public function __construct(RegisterService $registerService, UserService $userService)
@@ -24,9 +27,10 @@ class RegisterController extends Controller
 
     public function register(RegisterRequest $request): JsonResponse
     {
-        $user = $this->registerService->registerUser($request);
+        $user = $this->userService->createUser($request);
         $this->userService->createRoleForUser($user, Role::ROLE_USER);
-        $user = $this->userService->createTokenForUser($user);
+        $this->registerService->triggerRegisteredEvent($user);
+        $user = $this->createTokenForUser($user, "api_token");
 
         return response()->json([
             "user" => UserResource::make($user),

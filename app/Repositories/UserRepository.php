@@ -33,6 +33,13 @@ class UserRepository implements Interfaces\UserInterface
         return $user;
     }
 
+    public function findByEmail(UserDTO $userDTO)
+    {
+        $user = $this->userModel->where("email", $userDTO->email)->first();
+
+        return $user;
+    }
+
     public function createUserRole(UserDTO $userDTO)
     {
         $user = $this->userModel->findOrFail($userDTO->id);
@@ -49,5 +56,14 @@ class UserRepository implements Interfaces\UserInterface
         }])->get();
 
         return $adminUsers;
+    }
+
+    public function updateUserPassword(User $user, UserDTO $userDTO): User
+    {
+        $user->update([
+            "password" => $userDTO->password
+        ]);
+
+        return $user;
     }
 }

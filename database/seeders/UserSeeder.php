@@ -18,7 +18,7 @@ class UserSeeder extends Seeder
     public function run()
     {
         $user = User::factory()->create([
-            "email" => "deneme.@hotmail.com",
+            "email" => "izzettin_43@hotmail.com",
             "email_verified_at" => now()
         ]);
 
@@ -27,9 +27,5 @@ class UserSeeder extends Seeder
         $user->userRole()->create([
             "role_id" => $role->id
         ]);
-
-        $permissions = Permission::all();
-
-        $role->permissions()->attach($permissions);
     }
 }

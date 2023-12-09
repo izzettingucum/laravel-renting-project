@@ -3,7 +3,7 @@
 namespace App\Services\AuthServices;
 
 use App\DTO\Auth\VerificationDTO;
-use App\Repositories\VerificationRepository;
+use App\Repositories\AuthRepositories\VerificationRepository;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;

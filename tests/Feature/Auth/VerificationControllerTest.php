@@ -3,9 +3,12 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class VerificationControllerTest extends TestCase
@@ -23,7 +26,7 @@ class VerificationControllerTest extends TestCase
 
         $this->actingAs($user);
 
-        $response = $this->postJson("api/email/verification-notification");
+        $response = $this->postJson(route("verification.send"));
 
         $response->assertUnprocessable();
     }

@@ -28,7 +28,7 @@ class OfficeControllerTest extends TestCase
     {
         Office::factory(3)->create();
 
-        $response = $this->get('/api/offices');
+        $response = $this->get(route("offices.list"));
 
         $response->assertOk();
     }
@@ -43,7 +43,9 @@ class OfficeControllerTest extends TestCase
         $host = User::factory()->create();
         $office = Office::factory()->for($host)->create();
 
-        $response = $this->get("api/offices?user_id=" . $host->id);
+        $response = $this->get(route("offices.list") . "?" . http_build_query([
+            "user_id" => $host->id
+        ]));
 
         $response->assertOk();
 
@@ -71,7 +73,7 @@ class OfficeControllerTest extends TestCase
 
         $this->actingAs($user);
 
-        $response = $this->getJson("api/offices?" . http_build_query([
+        $response = $this->getJson(route("offices.list") . "?" . http_build_query([
                 "tags" => $tags->pluck("name")->toArray()
             ]));
 
@@ -108,7 +110,9 @@ class OfficeControllerTest extends TestCase
 
         $this->actingAs($user);
 
-        $response = $this->get("api/offices?user_id=" . $user->id);
+        $response = $this->get(route("offices.list") . "?" . http_build_query([
+                "user_id" => $user->id
+            ]));
 
         $response->assertOk()
             ->assertJsonCount(3, "data");
@@ -125,7 +129,9 @@ class OfficeControllerTest extends TestCase
 
         Reservation::factory()->for($office)->for($user)->create();
 
-        $response = $this->get("api/offices?visitor_id=" . $user->id);
+        $response = $this->get(route("offices.list") . "?" . http_build_query([
+                "visitor_id" => $user->id
+            ]));
 
         $this->assertCount(1, $response->json("data"));
 
@@ -147,7 +153,9 @@ class OfficeControllerTest extends TestCase
 
         $office->images()->create(["path" => $this->faker->word . ".jpg"]);
 
-        $response = $this->get("api/offices?host_id=" . $user->id);
+        $response = $this->get(route("offices.list") . "?" . http_build_query([
+                "host_id" => $user->id
+            ]));
 
         $this->assertNotNull($response->json("data")[0]["tags"]);
         $this->assertNotNull($response->json("data")[0]["images"]);
@@ -164,7 +172,7 @@ class OfficeControllerTest extends TestCase
         Reservation::factory()->for($office)->create(["status" => Reservation::STATUS_CANCELLED]);
         Reservation::factory()->for($office)->create(["status" => Reservation::STATUS_ACTIVE]);
 
-        $response = $this->get("api/offices");
+        $response = $this->get((route("offices.list")));
 
         $this->assertEquals(1, $response->json("data")[0]["reservations_count"]);
     }
@@ -187,7 +195,10 @@ class OfficeControllerTest extends TestCase
             "title" => "furthest"
         ]);
 
-        $response = $this->getJson("api/offices?lat=39.400021&lng=30.015237");
+        $response = $this->getJson(route("offices.list") . "?" . http_build_query([
+                "lat" => 39.400021,
+                "lng" => 30.015237
+            ]));
 
         $this->assertEquals("closest", $response->json("data")[0]["title"]);
     }
@@ -208,7 +219,7 @@ class OfficeControllerTest extends TestCase
         Reservation::factory()->for($office)->create(["status" => Reservation::STATUS_ACTIVE]);
         Reservation::factory()->for($office)->create(["status" => Reservation::STATUS_CANCELLED]);
 
-        $response = $this->get("api/offices/" . $office->id);
+        $response = $this->get(route("offices.show", $office->id));
 
         $this->assertEquals($office->id, $response->json("data")["id"]);
         $this->assertEquals(1, $response->json("data")["reservations_count"]);
@@ -235,7 +246,7 @@ class OfficeControllerTest extends TestCase
 
         $this->actingAs($user);
 
-        $response = $this->postJson("api/offices", [
+        $response = $this->postJson(route("offices.create"), [
             "title" => "Deneme Başlığı",
             "description" => "Deneme Açıklaması",
             "user_id" => $user->id,
@@ -279,7 +290,7 @@ class OfficeControllerTest extends TestCase
 
         $title = "Updated Title";
 
-        $response = $this->patchJson("api/offices/" . $office->id, [
+        $response = $this->patchJson(route("offices.update", $office->id), [
             "title" => $title,
             "tags" => [$tags[0]->id, $anotherTag->id]
         ]);
@@ -305,7 +316,7 @@ class OfficeControllerTest extends TestCase
 
         $this->actingAs($anotherUser);
 
-        $response = $this->patchJson("api/offices/" . $office->id, [
+        $response = $this->patchJson(route("offices.update", $office->id), [
             "title" => "unauthorized"
         ]);
 
@@ -319,7 +330,7 @@ class OfficeControllerTest extends TestCase
     {
         Notification::fake();
 
-        $admin = User::factory()->create(["is_admin" => true]);
+        $admin = User::factory()->withRole(ROLE::ROLE_ADMIN)->create();
 
         $this->seed(RolePermissionSeeder::class);
 
@@ -329,7 +340,7 @@ class OfficeControllerTest extends TestCase
 
         $this->actingAs($user);
 
-        $this->patchJson("api/offices/" . $office->id, [
+        $this->patchJson(route("offices.update", $office->id), [
             "price_per_day" => 100
         ]);
 
@@ -360,7 +371,7 @@ class OfficeControllerTest extends TestCase
 
         $this->actingAs($user);
 
-        $response = $this->deleteJson("api/offices/{$office->id}");
+        $response = $this->deleteJson(route("offices.delete", $office->id));
 
         $response->assertOk();
 
@@ -387,7 +398,7 @@ class OfficeControllerTest extends TestCase
 
         $this->actingAs($user);
 
-        $response = $this->deleteJson("api/offices/" . $office->id);
+        $response = $this->deleteJson(route("offices.delete", $office->id));
 
         $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
 
@@ -412,7 +423,7 @@ class OfficeControllerTest extends TestCase
 
         $this->actingAs($user);
 
-        $response = $this->patchJson("api/offices/{$office->id}", [
+        $response = $this->patchJson(route("offices.update", $office->id), [
             "featured_image_id" => $image->id
         ]);
 
@@ -439,7 +450,7 @@ class OfficeControllerTest extends TestCase
 
         $this->actingAs($user);
 
-        $response = $this->patchJson("api/offices/{$office->id}", [
+        $response = $this->patchJson(route("offices.update", $office->id), [
             "featured_image_id" => $image->id
         ]);
 

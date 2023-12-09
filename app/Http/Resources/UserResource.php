@@ -21,6 +21,7 @@ class UserResource extends JsonResource
                 "created_at",
                 "updated_at",
                 "email_verified_at",
+                "two_factor_auth",
                 "user_role"
             ]))
         ];
