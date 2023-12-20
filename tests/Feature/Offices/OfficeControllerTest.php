@@ -3,7 +3,6 @@
 namespace Offices;
 
 use App\Models\Office;
-use App\Models\OfficeInfo;
 use App\Models\Reservation;
 use App\Models\Role;
 use App\Models\Tag;

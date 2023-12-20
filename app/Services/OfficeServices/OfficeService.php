@@ -9,7 +9,7 @@ use App\Models\Office;
 use App\Models\OfficeInfo;
 use App\Models\Reservation;
 use App\Notifications\Offices\OfficeUpdatedNotification;
-use App\Repositories\OfficeRepositories\OfficesRepository;
+use App\Repositories\Interfaces\OfficesInterface;
 use App\Repositories\UserRepository;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -26,7 +26,7 @@ class OfficeService
 
     protected $officesRepository, $officeDTO, $userRepository;
 
-    public function __construct(OfficesRepository $officesRepository, OfficeDTO $officeDTO, UserRepository $userRepository)
+    public function __construct(OfficesInterface $officesRepository, OfficeDTO $officeDTO, UserRepository $userRepository)
     {
         $this->officesRepository = $officesRepository;
         $this->officeDTO = $officeDTO;

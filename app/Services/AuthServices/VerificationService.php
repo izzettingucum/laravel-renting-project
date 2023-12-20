@@ -3,7 +3,7 @@
 namespace App\Services\AuthServices;
 
 use App\DTO\Auth\VerificationDTO;
-use App\Repositories\AuthRepositories\VerificationRepository;
+use App\Repositories\Interfaces\VerificationInterface;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -12,7 +12,7 @@ class VerificationService
 {
     public $verificationDTO, $verificationRepository;
 
-    public function __construct(VerificationDTO $verificationDTO, VerificationRepository $verificationRepository)
+    public function __construct(VerificationDTO $verificationDTO, VerificationInterface $verificationRepository)
     {
         $this->verificationDTO = $verificationDTO;
         $this->verificationRepository = $verificationRepository;

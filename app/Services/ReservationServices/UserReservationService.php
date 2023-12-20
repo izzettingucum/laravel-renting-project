@@ -9,10 +9,9 @@ use App\Http\Requests\UserReservations\IndexRequest;
 use App\Models\Office;
 use App\Models\Reservation;
 use App\Models\User;
-use App\Notifications\Reservations\NewHostReservation;
 use App\Notifications\Reservations\NewUserReservation;
-use App\Repositories\OfficeRepositories\OfficesRepository;
-use App\Repositories\ReservationRepositories\UserReservationsRepository;
+use App\Repositories\Interfaces\OfficesInterface;
+use App\Repositories\Interfaces\UserReservationsInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
@@ -26,8 +25,8 @@ class UserReservationService
     protected $userReservationsRepository, $officesRepository, $reservationDTO, $officeDTO;
 
     public function __construct(
-        UserReservationsRepository $userReservationsRepository,
-        OfficesRepository          $officesRepository,
+        UserReservationsInterface $userReservationsRepository,
+        OfficesInterface         $officesRepository,
         ReservationDTO             $reservationDTO,
         OfficeDTO                  $officeDTO
     )

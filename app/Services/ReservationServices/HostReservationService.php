@@ -6,7 +6,7 @@ use App\DTO\ReservationDTO;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Notifications\Reservations\NewHostReservation;
-use App\Repositories\ReservationRepositories\HostReservationsRepository;
+use App\Repositories\Interfaces\HostReservationsInterface;
 use Illuminate\Support\Facades\Notification;
 
 class HostReservationService
@@ -14,7 +14,7 @@ class HostReservationService
 
     protected $hostReservationsRepository, $reservationDTO;
 
-    public function __construct(HostReservationsRepository $hostReservationsRepository, ReservationDTO $reservationDTO)
+    public function __construct(HostReservationsInterface $hostReservationsRepository, ReservationDTO $reservationDTO)
     {
         $this->hostReservationsRepository = $hostReservationsRepository;
         $this->reservationDTO = $reservationDTO;

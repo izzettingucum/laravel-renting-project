@@ -5,7 +5,7 @@ namespace App\Services\OfficeServices;
 use App\DTO\OfficeImageDTO;
 use App\Models\Image;
 use App\Models\Office;
-use App\Repositories\OfficeRepositories\OfficeImagesRepository;
+use App\Repositories\Interfaces\OfficeImagesInterface;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -16,7 +16,7 @@ class OfficeImageService
 
     protected $officeImagesRepository, $officeImageDTO;
 
-    public function __construct(OfficeImagesRepository $officeImagesRepository, OfficeImageDTO $officeImageDTO)
+    public function __construct(OfficeImagesInterface $officeImagesRepository, OfficeImageDTO $officeImageDTO)
     {
         $this->officeImagesRepository = $officeImagesRepository;
         $this->officeImageDTO = $officeImageDTO;

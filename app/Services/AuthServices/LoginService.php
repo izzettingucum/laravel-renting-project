@@ -7,10 +7,9 @@ use App\DTO\TwoFactorDTO;
 use App\Http\Requests\Auth\TwoFactorRequest;
 use App\Models\User;
 use App\Notifications\Auth\TwoFactorNotification;
-use App\Repositories\AuthRepositories\TwoFactorRepository;
-use App\Repositories\UserRepository;
+use App\Repositories\Interfaces\TwoFactorInterface;
+use App\Repositories\Interfaces\UserInterface;
 use App\Traits\AuthProcess;
-use App\Traits\TwoFactorAuth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
@@ -21,7 +20,7 @@ class LoginService
 
     protected $userRepository, $userDTO, $twoFactorDTO, $twoFactorRepository, $message;
 
-    public function __construct(UserRepository $userRepository, UserDTO $userDTO, TwoFactorDTO $twoFactorDTO, TwoFactorRepository $twoFactorRepository)
+    public function __construct(UserInterface $userRepository, UserDTO $userDTO, TwoFactorDTO $twoFactorDTO, TwoFactorInterface $twoFactorRepository)
     {
         $this->userRepository = $userRepository;
         $this->userDTO = $userDTO;

@@ -5,8 +5,8 @@ namespace App\Services;
 use App\DTO\Auth\RoleDTO;
 use App\DTO\Auth\UserDTO;
 use App\Models\User;
-use App\Repositories\AuthRepositories\RoleRepository;
-use App\Repositories\UserRepository;
+use App\Repositories\Interfaces\RoleInterface;
+use App\Repositories\Interfaces\UserInterface;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -14,7 +14,7 @@ class UserService
 {
     protected $userRepository, $userDTO, $roleRepository, $roleDTO;
 
-    public function __construct(UserRepository $userRepository, UserDTO $userDTO, RoleRepository $roleRepository, RoleDTO $roleDTO)
+    public function __construct(UserInterface $userRepository, UserDTO $userDTO, RoleInterface $roleRepository, RoleDTO $roleDTO)
     {
         $this->userRepository = $userRepository;
         $this->userDTO = $userDTO;

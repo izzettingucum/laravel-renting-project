@@ -6,8 +6,8 @@ use App\DTO\Auth\ForgotPasswordDTO;
 use App\DTO\Auth\UserDTO;
 use App\Models\User;
 use App\Notifications\Auth\ForgotPasswordNotification;
-use App\Repositories\AuthRepositories\ForgotPasswordRepository;
-use App\Repositories\UserRepository;
+use App\Repositories\Interfaces\ForgotPasswordInterface;
+use App\Repositories\Interfaces\UserInterface;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -16,7 +16,7 @@ class ForgotPasswordService
 {
     protected $userRepository, $userDTO, $forgotPasswordRepository, $forgotPasswordDTO;
 
-    public function __construct(UserRepository $userRepository, UserDTO $userDTO, ForgotPasswordRepository $forgotPasswordRepository, ForgotPasswordDTO $forgotPasswordDTO)
+    public function __construct(UserInterface $userRepository, UserDTO $userDTO, ForgotPasswordInterface $forgotPasswordRepository, ForgotPasswordDTO $forgotPasswordDTO)
     {
         $this->userRepository = $userRepository;
         $this->userDTO = $userDTO;

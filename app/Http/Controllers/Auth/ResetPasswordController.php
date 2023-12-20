@@ -7,7 +7,6 @@ use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Services\AuthServices\ResetPasswordService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Hash;
 
 class ResetPasswordController extends Controller
 {

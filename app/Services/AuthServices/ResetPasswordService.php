@@ -4,15 +4,14 @@ namespace App\Services\AuthServices;
 
 use App\DTO\Auth\UserDTO;
 use App\Models\User;
-use App\Repositories\UserRepository;
+use App\Repositories\Interfaces\UserInterface;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
 
 class ResetPasswordService
 {
     protected $userRepository, $userDTO;
 
-    public function __construct(UserRepository $userRepository, UserDTO $userDTO)
+    public function __construct(UserInterface $userRepository, UserDTO $userDTO)
     {
         $this->userRepository = $userRepository;
         $this->userDTO = $userDTO;
