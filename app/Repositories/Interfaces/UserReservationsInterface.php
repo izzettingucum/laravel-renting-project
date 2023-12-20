@@ -8,7 +8,7 @@ interface UserReservationsInterface
 {
     public function getUserReservations(ReservationDTO $userReservationDTO);
 
-    public function findById(ReservationDTO $userReservationDTO);
+    public function findReservationById(ReservationDTO $userReservationDTO);
 
     public function store(ReservationDTO $userReservationDTO);
 

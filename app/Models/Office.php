@@ -21,10 +21,16 @@ class Office extends Model
         "lat" => "float",
         "lng" => "float",
         "approval_status" => "integer",
-        "hidden" => "bool",
-        "price_per_day" => "integer",
-        "monthly_discount" => "integer",
-        "featured_image_id" => "integer"
+        "featured_image_id" => "integer",
+        "hidden" => "bool"
+    ];
+
+    protected $fillable = [
+        "lat",
+        "lng",
+        "featured_image_id",
+        "approval_status",
+        "hidden"
     ];
 
     public function user() : BelongsTo
@@ -35,6 +41,11 @@ class Office extends Model
     public function reservations() : HasMany
     {
         return $this->hasMany(Reservation::class);
+    }
+
+    public function officeInfo()
+    {
+        return $this->hasOne(OfficeInfo::class);
     }
 
     public function images() : MorphMany

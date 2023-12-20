@@ -6,6 +6,7 @@ use App\DTO\ReservationDTO;
 use App\Models\Reservation;
 use App\Repositories\Interfaces\UserReservationsInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\Response;
 use Illuminate\Validation\ValidationException;
 
 class UserReservationsRepository implements UserReservationsInterface
@@ -45,16 +46,10 @@ class UserReservationsRepository implements UserReservationsInterface
             });
     }
 
-    public function findById(ReservationDTO $userReservationDTO)
+    public function findReservationById(ReservationDTO $userReservationDTO)
     {
-        try {
-            $reservation = $this->reservationModel->findOrFail($userReservationDTO->id);
-        }
-        catch (ModelNotFoundException $e) {
-            throw ValidationException::withMessages([
-                "reservation_id" => "Invalid reservation_id"
-            ]);
-        }
+        $reservation = $this->reservationModel->findOrFail($userReservationDTO->id);
+
         return $reservation->load("office");
     }
 

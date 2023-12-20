@@ -178,10 +178,7 @@ class UserReservationControllerTest extends TestCase
 
         $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
-        $office = Office::factory()->create([
-            "price_per_day" => 10,
-            "monthly_discount" => 10
-        ]);
+        $office = Office::factory()->WithOfficeInfo(["price_per_day" => 10, "monthly_discount" => 10])->create();
 
         $this->actingAs($user);
 
@@ -214,7 +211,7 @@ class UserReservationControllerTest extends TestCase
             "end_date" => now()->addDay(32)
         ]);
 
-        $response->assertUnprocessable()
+        $response->assertNotFound()
             ->assertJsonValidationErrors(["office_id" => "Invalid office_id"]);
     }
 

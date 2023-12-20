@@ -3,6 +3,7 @@
 namespace Offices;
 
 use App\Models\Office;
+use App\Models\OfficeInfo;
 use App\Models\Reservation;
 use App\Models\Role;
 use App\Models\Tag;
@@ -183,16 +184,16 @@ class OfficeControllerTest extends TestCase
 
     public function itOrdersByDistanceWhenCoordinatesAreProvided()
     {
-        $office1 = Office::factory()->create([
-            "lat" => "39.400021",
-            "lng" => "30.016182",
+        Office::factory()->withOfficeInfo([
             "title" => "closest"
+        ])->create([
+            "lat" => "39.400021", "lng" => "30.016182"
         ]);
 
-        $office2 = Office::factory()->create([
-            "lat" => "39.402283",
-            "lng" => "30.019930",
+        Office::factory()->withOfficeInfo([
             "title" => "furthest"
+        ])->create([
+            "lat" => "39.402283", "lng" => "30.019930"
         ]);
 
         $response = $this->getJson(route("offices.list") . "?" . http_build_query([
@@ -200,7 +201,7 @@ class OfficeControllerTest extends TestCase
                 "lng" => 30.015237
             ]));
 
-        $this->assertEquals("closest", $response->json("data")[0]["title"]);
+        $this->assertEquals("closest", $response->json("data")[0]["office_info"]["title"]);
     }
 
     /**
@@ -259,11 +260,11 @@ class OfficeControllerTest extends TestCase
         ]);
 
         $response->assertCreated()
-            ->assertJsonPath("data.title", "Deneme Başlığı")
+            ->assertJsonPath("data.office_info.title", "Deneme Başlığı")
             ->assertJsonPath("data.user.id", $user->id)
             ->assertJsonCount(2, "data.tags");
 
-        $this->assertDatabaseHas("offices", [
+        $this->assertDatabaseHas("office_infos", [
             "title" => "Deneme Başlığı"
         ]);
 
@@ -283,7 +284,7 @@ class OfficeControllerTest extends TestCase
         $tags = Tag::factory(2)->create();
         $anotherTag = Tag::factory()->create();
 
-        $office = Office::factory()->for($user)->create();
+        $office = Office::factory()->for($user)->withOfficeInfo()->create();
         $office->tags()->attach($tags);
 
         $this->actingAs($user);
@@ -298,7 +299,7 @@ class OfficeControllerTest extends TestCase
         $response->assertOk()
             ->assertJsonCount(2, "data.tags")
             ->assertJsonPath("data.tags.0.id", $tags[0]->id)
-            ->assertJsonPath("data.title", $title);
+            ->assertJsonPath("data.office_info.title", $title);
     }
 
     /**
@@ -336,7 +337,7 @@ class OfficeControllerTest extends TestCase
 
         $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
-        $office = Office::factory()->for($user)->create();
+        $office = Office::factory()->for($user)->withOfficeInfo()->create();
 
         $this->actingAs($user);
 
@@ -347,6 +348,11 @@ class OfficeControllerTest extends TestCase
         $this->assertDatabaseHas("offices", [
             "id" => $office->id,
             "approval_status" => Office::APPROVAL_PENDING
+        ]);
+
+        $this->assertDatabaseHas("office_infos", [
+            "office_id" => $office->id,
+            "price_per_day" => 100
         ]);
 
         Notification::assertSentTo($admin, OfficeUpdatedNotification::class);
@@ -415,7 +421,7 @@ class OfficeControllerTest extends TestCase
 
         $user = User::factory()->withRole(ROLE::ROLE_USER)->create();
 
-        $office = Office::factory()->for($user)->create();
+        $office = Office::factory()->for($user)->withOfficeInfo()->create();
 
         $image = $office->images()->create([
             "path" => "image.jpg"

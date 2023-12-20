@@ -45,7 +45,8 @@ class UserReservationController extends Controller
 
     public function cancel($id): ReservationResource
     {
-        $reservation = $this->userReservationService->cancel($id);
+        $reservation = $this->userReservationService->findReservationById($id);
+        $reservation = $this->userReservationService->cancelReservation($reservation);
         $this->userReservationService->sendNewUserReservationNotification(auth()->user(), $reservation);
         $this->hostReservationService->sendNewHostReservationNotification($reservation->office->user, $reservation);
 

@@ -13,6 +13,8 @@ use App\Notifications\Reservations\NewHostReservation;
 use App\Notifications\Reservations\NewUserReservation;
 use App\Repositories\OfficeRepositories\OfficesRepository;
 use App\Repositories\ReservationRepositories\UserReservationsRepository;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
@@ -103,12 +105,8 @@ class UserReservationService
         return $reservation;
     }
 
-    public function cancel($id)
+    public function cancelReservation($reservation)
     {
-        $this->reservationDTO->setId($id);
-
-        $reservation = $this->userReservationsRepository->findById($this->reservationDTO);
-
         throw_if(
             auth()->id() != $reservation->user_id ||
             $reservation->status == Reservation::STATUS_CANCELLED ||
@@ -126,5 +124,20 @@ class UserReservationService
     public function sendNewUserReservationNotification(User $user, Reservation $reservation)
     {
         Notification::send($user, new NewUserReservation($reservation));
+    }
+
+    public function findReservationById($id)
+    {
+        $this->reservationDTO->setId($id);
+
+        try {
+            $reservation = $this->userReservationsRepository->findReservationById($this->reservationDTO);
+        } catch (ModelNotFoundException $e) {
+            throw ValidationException::withMessages([
+                "reservation_id" => "Invalid reservation_id"
+            ])->status(Response::HTTP_NOT_FOUND);
+        }
+
+        return $reservation;
     }
 }

@@ -6,11 +6,14 @@ use App\DTO\OfficeDTO;
 use App\Events\OfficeCreated;
 use App\Http\Requests\Offices\OfficeListRequest;
 use App\Models\Office;
+use App\Models\OfficeInfo;
 use App\Models\Reservation;
 use App\Notifications\Offices\OfficeUpdatedNotification;
 use App\Repositories\OfficeRepositories\OfficesRepository;
 use App\Repositories\UserRepository;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -50,7 +53,14 @@ class OfficeService
     {
         $this->officeDTO->setId($id);
 
-        $office = $this->officesRepository->findById($this->officeDTO);
+        try {
+            $office = $this->officesRepository->findById($this->officeDTO);
+        } catch (ModelNotFoundException $e) {
+            throw ValidationException::withMessages([
+                "office_id" => "Invalid office_id"
+            ])->status(Response::HTTP_NOT_FOUND);
+        }
+
 
         return $office;
     }
@@ -61,17 +71,18 @@ class OfficeService
         $attributes["userId"] = auth()->id();
 
         $office = DB::transaction(function () use ($attributes) {
-            $office = $this->officesRepository->createOffice(
-                $this->officeDTO->create((Arr::except($attributes, "tags")))
-            );
+            $officeDTO = $this->officeDTO->create((Arr::except($attributes, "tags")));
+            $office = $this->officesRepository->createOffice($officeDTO);
+
+            $this->officesRepository->createOfficeInfo($office, $officeDTO);
 
             if (isset($attributes["tags"])) {
-                $this->officeDTO->tags = $attributes["tags"];
-                $this->officeDTO->id = $office->id;
-                $this->officesRepository->attachTags($this->officeDTO);
+                $officeDTO->tags = $attributes["tags"];
+                $officeDTO->id = $office->id;
+                $this->officesRepository->attachTags($officeDTO);
             }
 
-            return $office;
+            return $office->load(["officeInfo", "images", "tags"]);
         });
 
         return $office;
@@ -81,24 +92,35 @@ class OfficeService
     {
         $this->authorize("update", $office);
 
-        $office->fill(Arr::except($attributes, "tags"));
+        $officeInfo = $this->officesRepository->getOfficeInfo($office);
 
-        if ($requiresReview = $office->isDirty(["lat", "lng", "price_per_day", "address_line1"])) {
+        $office = $this->fillOfficeAttributes($office, $attributes);
+
+        $officeInfo = $this->fillOfficeInfoAttributes($officeInfo, $attributes);
+
+        $requiresReview = $this->checkReviewRequirements($office, $officeInfo);
+
+        if ($requiresReview) {
             $attributes["approval_status"] = Office::APPROVAL_PENDING;
         }
 
-        DB::transaction(function () use ($attributes, $office) {
+        DB::transaction(function () use ($attributes, $office, $officeInfo, $requiresReview) {
             $officeDTO = $this->officeDTO->create(Arr::except($attributes, "tags"));
-            $officeDTO->setId($office->id);
 
-            $this->officesRepository->update($officeDTO);
+            if ($office->isDirty() || $requiresReview) {
+                $this->officesRepository->updateOffice($office, $officeDTO);
+            }
+
+            if ($officeInfo->isDirty()) {
+                $this->officesRepository->updateOfficeInfo($officeInfo, $officeDTO);
+            }
 
             if (isset($attributes["tags"])) {
                 $officeDTO->setTags($attributes["tags"]);
-                $this->officesRepository->syncTags($officeDTO);
+                $this->officesRepository->syncTags($office, $officeDTO);
             }
 
-            return $office;
+            return $office->load(["officeInfo", "images", "tags"]);
         });
 
         $admins = $this->userRepository->getAllAdmins();
@@ -108,6 +130,25 @@ class OfficeService
         }
 
         return $office;
+    }
+
+    private function checkReviewRequirements(Office $office, OfficeInfo $officeInfo): bool
+    {
+        return $office->isDirty(["lat", "lng"]) || $officeInfo->isDirty(["price_per_day", "address_line1"]);
+    }
+
+    private function fillOfficeAttributes(Office $office, array $attributes) : Office
+    {
+        $office->fill(Arr::only($attributes, $office->getFillable()));
+
+        return $office;
+    }
+
+    private function fillOfficeInfoAttributes(OfficeInfo $officeInfo, array $attributes) : OfficeInfo
+    {
+        $officeInfo->fill(Arr::only($attributes, $officeInfo->getFillable()));
+
+        return $officeInfo;
     }
 
     public function delete(Office $office)

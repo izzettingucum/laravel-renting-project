@@ -4,6 +4,7 @@ namespace App\Repositories\OfficeRepositories;
 
 use App\DTO\OfficeDTO;
 use App\Models\Office;
+use App\Models\OfficeInfo;
 use App\Models\Reservation;
 use App\Repositories\Interfaces\OfficesInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -11,11 +12,12 @@ use Illuminate\Validation\ValidationException;
 
 class OfficesRepository implements OfficesInterface
 {
-    protected $officeModel;
+    protected $officeModel, $officeInfoModel;
 
-    public function __construct(Office $officeModel)
+    public function __construct(Office $officeModel, OfficeInfo $officeInfo)
     {
         $this->officeModel = $officeModel;
+        $this->officeInfoModel = $officeInfo;
     }
 
     public function getOffices(OfficeDTO $officeDTO)
@@ -26,7 +28,7 @@ class OfficesRepository implements OfficesInterface
 
         $query = $query
             ->latest("id")
-            ->with(["images", "tags", "user"])
+            ->with(["officeInfo", "images", "tags", "user"])
             ->withCount(["reservations" => function ($query) {
                 return $query->where("status", "=", Reservation::STATUS_ACTIVE);
             }])
@@ -59,51 +61,71 @@ class OfficesRepository implements OfficesInterface
 
     public function findById(OfficeDTO $officeDTO)
     {
-        try {
-            $office = $this->officeModel->findOrFail($officeDTO->id)
-                ->withCount(["reservations" => function ($query) {
-                    return $query->where("status", "=", Reservation::STATUS_ACTIVE);
-                }])
-                ->with(["images", "tags", "user"])
-                ->first();
-        } catch (ModelNotFoundException $e) {
-            throw ValidationException::withMessages([
-                "office_id" => "Invalid office_id"
-            ]);
-        }
+        $office = $this->officeModel->findOrFail($officeDTO->id)
+            ->withCount(["reservations" => function ($query) {
+                return $query->where("status", "=", Reservation::STATUS_ACTIVE);
+            }])
+            ->with(["officeInfo", "images", "tags", "user"])
+            ->first();
+
         return $office;
     }
 
     public function createOffice(OfficeDTO $officeDTO)
     {
         $office = $this->officeModel->create([
-            "title" => $officeDTO->title,
-            "description" => $officeDTO->description,
-            "address_line1" => $officeDTO->address_line1,
             "user_id" => $officeDTO->userId,
-            "price_per_day" => $officeDTO->price_per_day,
-            "monthly_discount" => $officeDTO->monthly_discount,
             "lat" => $officeDTO->lat,
             "lng" => $officeDTO->lng,
             "approval_status" => $officeDTO->approval_status
         ]);
 
-        return $office->load(["images", "user"]);
+        return $office;
     }
 
-    public function update(OfficeDTO $officeDTO)
+    public function createOfficeInfo(Office $office, OfficeDTO $officeDTO)
     {
-        $office = $this->officeModel->findOrFail($officeDTO->id);
+        $office = $office->officeInfo()->create([
+            "title" => $officeDTO->title,
+            "description" => $officeDTO->description,
+            "address_line1" => $officeDTO->address_line1,
+            "price_per_day" => $officeDTO->price_per_day,
+            "monthly_discount" => $officeDTO->monthly_discount
+        ]);
 
+        return $office;
+    }
+
+    public function updateOffice(Office $office, OfficeDTO $officeDTO)
+    {
         foreach ($officeDTO as $key => $value) {
-            if (!is_null($value)) {
+            if (!is_null($value) && in_array($key, $office->getFillable())) {
                 $office->{$key} = $value;
             }
         }
 
         $office->save();
 
-        return $office->load(["images", "user"]);
+        return $office;
+    }
+
+
+    public function updateOfficeInfo(OfficeInfo $office, OfficeDTO $officeDTO)
+    {
+        foreach ($officeDTO as $key => $value) {
+            if (!is_null($value) && in_array($key, $office->getFillable())) {
+                $office->{$key} = $value;
+            }
+        }
+
+        $office->save();
+
+        return $office;
+    }
+
+    public function getOfficeInfo(Office $office)
+    {
+        return $office->officeInfo()->first();
     }
 
     public function delete(OfficeDTO $officeDTO)
@@ -122,10 +144,8 @@ class OfficesRepository implements OfficesInterface
         return $office->load(["tags"]);
     }
 
-    public function syncTags(OfficeDTO $officeDTO)
+    public function syncTags(Office $office, OfficeDTO $officeDTO)
     {
-        $office = $this->officeModel->findOrFail($officeDTO->id);
-
         $tagsToSync = [];
 
         foreach ($officeDTO->tags as $tag) {
